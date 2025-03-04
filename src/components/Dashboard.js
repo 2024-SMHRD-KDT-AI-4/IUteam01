@@ -4,14 +4,22 @@ import { Link } from "react-router-dom";
 import { AppBar, Toolbar, Typography, Button, Box } from "@mui/material";
 import ChartSection from "./ChartSection";
 import NewsSection from "./NewsSection";
-import FortuneSection from "./FortuneSection";
+// FortuneSection는 삭제되었습니다.
 
-// props로 darkMode, setDarkMode 받음
 function Dashboard({ darkMode, setDarkMode }) {
   const [activeTab, setActiveTab] = useState("chart");
   const [searchTerm, setSearchTerm] = useState("");
 
+  // 탭 전환 함수
   const handleTabChange = (tabName) => {
+    if (tabName === "fortune") {
+      // "운세" 탭 클릭 시 새 탭으로 외부 URL 열기
+      window.open(
+        "https://search.naver.com/search.naver?sm=tab_hty.top&where=nexearch&ssc=tab.nx.all&query=%EC%98%A4%EB%8A%98%EC%9D%98+%EC%9A%B4%EC%84%B8&oquery=%EB%84%A4%EC%9D%B4%EB%B2%84+%EC%9A%B4%EC%84%B8&tqi=i8jThlqo1e8ssCtQNr4sssssttl-487198",
+        "_blank"
+      );
+      return; // 상태 업데이트 없이 바로 새 탭으로 이동
+    }
     setActiveTab(tabName);
   };
 
@@ -28,8 +36,6 @@ function Dashboard({ darkMode, setDarkMode }) {
     window.open("/signup.html", "signupWindow", "width=400,height=500");
   };
 
-  // Dashboard 내부에서는 다크모드 상태를 직접 관리하지 않고
-  // App.js에서 내려준 setDarkMode를 사용
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
   };
@@ -79,7 +85,7 @@ function Dashboard({ darkMode, setDarkMode }) {
           📰 뉴스
         </Button>
         <Button
-          variant={activeTab === "fortune" ? "contained" : "outlined"}
+          variant="outlined"
           onClick={() => handleTabChange("fortune")}
         >
           🔮 운세
@@ -92,7 +98,7 @@ function Dashboard({ darkMode, setDarkMode }) {
       <Box sx={{ padding: "1rem" }}>
         {activeTab === "chart" && <ChartSection />}
         {activeTab === "news" && <NewsSection />}
-        {activeTab === "fortune" && <FortuneSection />}
+        {/* "운세" 탭은 클릭 시 새 탭으로 이동되므로, 별도의 렌더링은 필요없음 */}
       </Box>
     </Box>
   );
