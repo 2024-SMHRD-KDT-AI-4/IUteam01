@@ -1,0 +1,7 @@
+[
+    { "date": "2025-03-01", "price": 50000, "rsi": 55, "macd": 1.2, "signal": 1.0 },
+    { "date": "2025-03-02", "price": 50500, "rsi": 58, "macd": 1.5, "signal": 1.1 },
+    { "date": "2025-03-03", "price": 51000, "rsi": 60, "macd": 1.8, "signal": 1.3 },
+    { "date": "2025-03-04", "price": 49500, "rsi": 52, "macd": 1.0, "signal": 0.9 },
+    { "date": "2025-03-05", "price": 48000, "rsi": 48, "macd": 0.7, "signal": 0.6 }
+  ]
