@@ -1,42 +1,54 @@
 // src/components/Dashboard.js
 import React, { useState } from "react";
 import { AppBar, Toolbar, Typography, Button, Box } from "@mui/material";
-import { Link } from "react-router-dom";
-
+import { useTranslation } from "react-i18next"; // i18n Hook 가져오기
+import i18n from "../i18n"; // i18n 직접 import
 import ChartSection from "./ChartSection";
 import NewsSection from "./NewsSection";
-import InquirySection from "./InquirySection"; // 문의사항 컴포넌트 추가
+import InquirySection from "./InquirySection";
 
 function Dashboard({ darkMode, setDarkMode }) {
+  // 탭 상태(차트/뉴스/운세/문의사항)
   const [activeTab, setActiveTab] = useState("chart");
+  // 검색어 상태
   const [searchTerm, setSearchTerm] = useState("");
 
-  // 탭 전환 함수
+  // i18n (언어 전환, 번역)
+  const { t } = useTranslation();
+
+  // 언어 토글 (국기 클릭 시)
+  const toggleLanguage = () => {
+    const newLang = i18n.language === "ko" ? "en" : "ko";
+    i18n.changeLanguage(newLang);
+  };
+
+  // 운세 탭 클릭 시 → 새 탭으로 이동
   const handleTabChange = (tabName) => {
     if (tabName === "fortune") {
-      // "운세" 탭 클릭 시 새 탭으로 외부 URL 열기
       window.open(
-        "https://search.naver.com/search.naver?sm=tab_hty.top&where=nexearch&ssc=tab.nx.all&query=%EC%98%A4%EB%8A%98%EC%9D%98+%EC%9A%B4%EC%84%B8&oquery=%EB%84%A4%EC%9D%B4%EB%B2%84+%EC%9A%B4%EC%84%B8&tqi=i8jThlqo1e8ssCtQNr4sssssttl-487198",
+        "https://search.naver.com/search.naver?sm=tab_hty.top&where=nexearch&ssc=tab.nx.all&query=%EC%98%A4%EB%8A%98%EC%9D%98+%EC%9A%B4%EC%84%B8",
         "_blank"
       );
-      return; // 상태 업데이트 없이 바로 새 탭으로 이동
+      return;
     }
     setActiveTab(tabName);
   };
 
+  // 검색 제출
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     alert(`검색어: ${searchTerm}`);
   };
 
+  // 로그인/회원가입 팝업
   const handleLogin = () => {
     window.open("/login.html", "loginWindow", "width=400,height=500");
   };
-
   const handleSignUp = () => {
     window.open("/signup.html", "signupWindow", "width=400,height=500");
   };
 
+  // 다크모드 토글
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
   };
@@ -46,30 +58,45 @@ function Dashboard({ darkMode, setDarkMode }) {
       {/* 상단 AppBar */}
       <AppBar position="static">
         <Toolbar>
+          {/* i18n 번역 */}
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            AI Coin Helper
+            {t("welcome")}
           </Typography>
+
+          {/* 검색 폼 */}
           <form onSubmit={handleSearchSubmit} style={{ marginRight: "16px" }}>
             <input
               type="text"
-              placeholder="검색어"
+              placeholder={t("searchPlaceholder") || "검색어"}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ marginRight: "8px" }}
             />
             <Button variant="contained" color="secondary" type="submit">
-              검색
+              {t("search") || "검색"}
             </Button>
           </form>
+
+          {/* 다크모드 토글 */}
           <Button color="inherit" onClick={toggleDarkMode}>
-            {darkMode ? "라이트모드" : "다크모드"}
+            {darkMode ? t("lightMode") : t("darkMode")}
           </Button>
+
+          {/* 로그인/회원가입 */}
           <Button color="inherit" onClick={handleLogin}>
-            로그인
+            {t("login")}
           </Button>
           <Button color="inherit" onClick={handleSignUp}>
-            회원가입
+            {t("signUp")}
           </Button>
+
+          {/* 국기 버튼 (언어 전환) */}
+          <img
+            src={i18n.language === "ko" ? "/flag-us.png" : "/flag-kr.png"}
+            alt="Toggle Language"
+            style={{ width: "30px", cursor: "pointer", marginLeft: "16px" }}
+            onClick={toggleLanguage}
+          />
         </Toolbar>
       </AppBar>
 
@@ -79,27 +106,22 @@ function Dashboard({ darkMode, setDarkMode }) {
           variant={activeTab === "chart" ? "contained" : "outlined"}
           onClick={() => handleTabChange("chart")}
         >
-          📈 차트
+          📈 {t("chart")}
         </Button>
         <Button
           variant={activeTab === "news" ? "contained" : "outlined"}
           onClick={() => handleTabChange("news")}
         >
-          📰 뉴스
+          📰 {t("news")}
         </Button>
-        <Button
-          variant="outlined"
-          onClick={() => handleTabChange("fortune")}
-        >
-          🔮 운세
+        <Button variant="outlined" onClick={() => handleTabChange("fortune")}>
+          🔮 {t("fortune")}
         </Button>
-
-        {/* "커뮤니티" 대신 "문의사항" 탭 추가 */}
         <Button
           variant={activeTab === "inquiry" ? "contained" : "outlined"}
           onClick={() => handleTabChange("inquiry")}
         >
-          문의사항
+          {t("inquiry")}
         </Button>
       </Box>
 
@@ -107,7 +129,6 @@ function Dashboard({ darkMode, setDarkMode }) {
       <Box sx={{ padding: "1rem" }}>
         {activeTab === "chart" && <ChartSection />}
         {activeTab === "news" && <NewsSection />}
-        {/* 운세 탭은 클릭 시 새 탭으로 이동하므로 별도 렌더링 없음 */}
         {activeTab === "inquiry" && <InquirySection />}
       </Box>
     </Box>
