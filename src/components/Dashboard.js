@@ -1,10 +1,11 @@
 // src/components/Dashboard.js
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
 import { AppBar, Toolbar, Typography, Button, Box } from "@mui/material";
+import { Link } from "react-router-dom";
+
 import ChartSection from "./ChartSection";
 import NewsSection from "./NewsSection";
-// FortuneSection는 삭제되었습니다.
+import InquirySection from "./InquirySection"; // 문의사항 컴포넌트 추가
 
 function Dashboard({ darkMode, setDarkMode }) {
   const [activeTab, setActiveTab] = useState("chart");
@@ -42,6 +43,7 @@ function Dashboard({ darkMode, setDarkMode }) {
 
   return (
     <Box sx={{ minHeight: "100vh" }}>
+      {/* 상단 AppBar */}
       <AppBar position="static">
         <Toolbar>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
@@ -71,6 +73,7 @@ function Dashboard({ darkMode, setDarkMode }) {
         </Toolbar>
       </AppBar>
 
+      {/* 탭 버튼들 */}
       <Box sx={{ padding: "1rem", display: "flex", gap: "1rem" }}>
         <Button
           variant={activeTab === "chart" ? "contained" : "outlined"}
@@ -90,15 +93,22 @@ function Dashboard({ darkMode, setDarkMode }) {
         >
           🔮 운세
         </Button>
-        <Link to="/community" style={{ textDecoration: "none" }}>
-          <Button variant="outlined">커뮤니티</Button>
-        </Link>
+
+        {/* "커뮤니티" 대신 "문의사항" 탭 추가 */}
+        <Button
+          variant={activeTab === "inquiry" ? "contained" : "outlined"}
+          onClick={() => handleTabChange("inquiry")}
+        >
+          문의사항
+        </Button>
       </Box>
 
+      {/* 탭 내용 렌더링 */}
       <Box sx={{ padding: "1rem" }}>
         {activeTab === "chart" && <ChartSection />}
         {activeTab === "news" && <NewsSection />}
-        {/* "운세" 탭은 클릭 시 새 탭으로 이동되므로, 별도의 렌더링은 필요없음 */}
+        {/* 운세 탭은 클릭 시 새 탭으로 이동하므로 별도 렌더링 없음 */}
+        {activeTab === "inquiry" && <InquirySection />}
       </Box>
     </Box>
   );

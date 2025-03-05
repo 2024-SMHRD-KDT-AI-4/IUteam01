@@ -1,4 +1,4 @@
-// src/components/NoticeScreen.js
+
 import React from "react";
 
 function NoticeScreen({ handleContinue }) {
