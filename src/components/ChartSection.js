@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, Typography, Button, ButtonGroup } from "@mui/material";
-import { Chart } from "react-google-charts";
+import ReactECharts from "echarts-for-react";
 
 function ChartSection() {
   const [chartData, setChartData] = useState([]);
@@ -16,13 +16,9 @@ function ChartSection() {
       const data = await response.json();
 
       // 가격 변동 차트 데이터 가공
-      const priceChartData = [["날짜", "가격"], ...data.map(item => [item.date, item.price])];
-
-      // RSI 차트 데이터 가공
-      const rsiChartData = [["날짜", "RSI"], ...data.map(item => [item.date, item.rsi])];
-
-      // MACD 차트 데이터 가공
-      const macdChartData = [["날짜", "MACD", "Signal"], ...data.map(item => [item.date, item.macd, item.signal])];
+      const priceChartData = data.map((item) => [item.date, item.price]);
+      const rsiChartData = data.map((item) => [item.date, item.rsi]);
+      const macdChartData = data.map((item) => [item.date, item.macd, item.signal]);
 
       setChartData(priceChartData);
       setRsiData(rsiChartData);
@@ -38,6 +34,36 @@ function ChartSection() {
     const interval = setInterval(() => fetchData(dataType), 180000);
     return () => clearInterval(interval);
   }, [dataType]); // ✅ dataType이 변경될 때마다 데이터 로드
+
+  // ✅ ECharts 옵션 (가격 변동)
+  const priceOptions = {
+    title: { text: `코인 가격 변동 (${dataType === "5min" ? "5분당" : "일별"})` },
+    tooltip: { trigger: "axis" },
+    xAxis: { type: "category", data: chartData.map((item) => item[0]), name: "날짜" },
+    yAxis: { type: "value", name: "가격" },
+    series: [{ data: chartData.map((item) => item[1]), type: "line", smooth: true }],
+  };
+
+  // ✅ ECharts 옵션 (RSI)
+  const rsiOptions = {
+    title: { text: `RSI (상대강도지수) - ${dataType === "5min" ? "5분당" : "일별"}` },
+    tooltip: { trigger: "axis" },
+    xAxis: { type: "category", data: rsiData.map((item) => item[0]), name: "날짜" },
+    yAxis: { type: "value", name: "RSI 값", min: 0, max: 100 },
+    series: [{ data: rsiData.map((item) => item[1]), type: "line", smooth: true, color: "blue" }],
+  };
+
+  // ✅ ECharts 옵션 (MACD)
+  const macdOptions = {
+    title: { text: `MACD & Signal (${dataType === "5min" ? "5분당" : "일별"})` },
+    tooltip: { trigger: "axis" },
+    xAxis: { type: "category", data: macdData.map((item) => item[0]), name: "날짜" },
+    yAxis: { type: "value", name: "값" },
+    series: [
+      { name: "MACD", data: macdData.map((item) => item[1]), type: "line", smooth: true },
+      { name: "Signal", data: macdData.map((item) => item[2]), type: "line", smooth: true, color: "red" },
+    ],
+  };
 
   return (
     <Card>
@@ -59,51 +85,14 @@ function ChartSection() {
           <Typography variant="body2">📊 데이터 로딩 중...</Typography>
         ) : (
           <>
-            {/* 가격 변동 차트 */}
-            <Chart
-              width={"100%"}
-              height={"300px"}
-              chartType="LineChart"
-              loader={<div>Loading Chart...</div>}
-              data={chartData}
-              options={{
-                title: `코인 가격 변동 (${dataType === "5min" ? "5분당" : "일별"})`,
-                hAxis: { title: "날짜" },
-                vAxis: { title: "가격" },
-                legend: "none",
-              }}
-            />
+            {/* ✅ 가격 변동 차트 (ECharts) */}
+            <ReactECharts option={priceOptions} style={{ height: "300px", width: "100%" }} />
 
-            {/* RSI 차트 */}
-            <Chart
-              width={"100%"}
-              height={"300px"}
-              chartType="LineChart"
-              loader={<div>Loading Chart...</div>}
-              data={rsiData}
-              options={{
-                title: `RSI (상대강도지수) - ${dataType === "5min" ? "5분당" : "일별"}`,
-                hAxis: { title: "날짜" },
-                vAxis: { title: "RSI 값", minValue: 0, maxValue: 100 },
-                legend: "none",
-              }}
-            />
+            {/* ✅ RSI 차트 (ECharts) */}
+            <ReactECharts option={rsiOptions} style={{ height: "300px", width: "100%" }} />
 
-            {/* MACD 차트 */}
-            <Chart
-              width={"100%"}
-              height={"300px"}
-              chartType="ComboChart"
-              loader={<div>Loading Chart...</div>}
-              data={macdData}
-              options={{
-                title: `MACD & Signal (${dataType === "5min" ? "5분당" : "일별"})`,
-                hAxis: { title: "날짜" },
-                vAxis: { title: "값" },
-                seriesType: "line",
-                series: { 1: { type: "line", color: "red" } },
-              }}
-            />
+            {/* ✅ MACD 차트 (ECharts) */}
+            <ReactECharts option={macdOptions} style={{ height: "300px", width: "100%" }} />
           </>
         )}
       </CardContent>
