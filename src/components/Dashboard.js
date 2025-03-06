@@ -1,36 +1,39 @@
 // src/components/Dashboard.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AppBar, Toolbar, Typography, Button, Box } from "@mui/material";
-import { useTranslation } from "react-i18next"; // i18n Hook 가져오기
-import i18n from "../i18n"; // i18n 직접 import
+import { useTranslation } from "react-i18next"; 
+import i18n from "../i18n"; // 위에서 만든 i18n.js 파일
 import ChartSection from "./ChartSection";
 import NewsSection from "./NewsSection";
 import InquirySection from "./InquirySection";
+import FortuneSection from "./FortuneSection";
 
 function Dashboard({ darkMode, setDarkMode }) {
-  // 탭 상태(차트/뉴스/운세/문의사항)
+  // 탭 상태("chart", "news", "fortune", "inquiry")
   const [activeTab, setActiveTab] = useState("chart");
   // 검색어 상태
   const [searchTerm, setSearchTerm] = useState("");
 
-  // i18n (언어 전환, 번역)
+  // i18n 훅 (번역)
   const { t } = useTranslation();
 
-  // 언어 토글 (국기 클릭 시)
+  // "fortune" 문자열만 따로 관리해서 강제 업데이트할 수도 있음
+  // 지금은 따로 useState 안 쓰고, t("fortune")을 직접 사용해도 됨.
+  // 필요하다면 아래와 같이 쓰면 됨:
+  //
+  // const [fortuneText, setFortuneText] = useState(t("fortune"));
+  // useEffect(() => {
+  //   setFortuneText(t("fortune"));
+  // }, [i18n.language]);
+
+  // 언어 토글
   const toggleLanguage = () => {
     const newLang = i18n.language === "ko" ? "en" : "ko";
     i18n.changeLanguage(newLang);
   };
 
-  // 운세 탭 클릭 시 → 새 탭으로 이동
+  // 탭 변경
   const handleTabChange = (tabName) => {
-    if (tabName === "fortune") {
-      window.open(
-        "https://search.naver.com/search.naver?sm=tab_hty.top&where=nexearch&ssc=tab.nx.all&query=%EC%98%A4%EB%8A%98%EC%9D%98+%EC%9A%B4%EC%84%B8",
-        "_blank"
-      );
-      return;
-    }
     setActiveTab(tabName);
   };
 
@@ -40,10 +43,11 @@ function Dashboard({ darkMode, setDarkMode }) {
     alert(`검색어: ${searchTerm}`);
   };
 
-  // 로그인/회원가입 팝업
+  // 로그인 / 회원가입 팝업 예시
   const handleLogin = () => {
     window.open("/login.html", "loginWindow", "width=400,height=500");
   };
+
   const handleSignUp = () => {
     window.open("/signup.html", "signupWindow", "width=400,height=500");
   };
@@ -58,7 +62,7 @@ function Dashboard({ darkMode, setDarkMode }) {
       {/* 상단 AppBar */}
       <AppBar position="static">
         <Toolbar>
-          {/* i18n 번역 */}
+          {/* 좌측 타이틀 */}
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             {t("welcome")}
           </Typography>
@@ -67,13 +71,13 @@ function Dashboard({ darkMode, setDarkMode }) {
           <form onSubmit={handleSearchSubmit} style={{ marginRight: "16px" }}>
             <input
               type="text"
-              placeholder={t("searchPlaceholder") || "검색어"}
+              placeholder={t("searchPlaceholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ marginRight: "8px" }}
             />
             <Button variant="contained" color="secondary" type="submit">
-              {t("search") || "검색"}
+              {t("search")}
             </Button>
           </form>
 
@@ -114,7 +118,10 @@ function Dashboard({ darkMode, setDarkMode }) {
         >
           📰 {t("news")}
         </Button>
-        <Button variant="outlined" onClick={() => handleTabChange("fortune")}>
+        <Button
+          variant={activeTab === "fortune" ? "contained" : "outlined"}
+          onClick={() => handleTabChange("fortune")}
+        >
           🔮 {t("fortune")}
         </Button>
         <Button
@@ -129,6 +136,7 @@ function Dashboard({ darkMode, setDarkMode }) {
       <Box sx={{ padding: "1rem" }}>
         {activeTab === "chart" && <ChartSection />}
         {activeTab === "news" && <NewsSection />}
+        {activeTab === "fortune" && <FortuneSection />}
         {activeTab === "inquiry" && <InquirySection />}
       </Box>
     </Box>

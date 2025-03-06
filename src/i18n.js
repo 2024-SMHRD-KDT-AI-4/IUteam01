@@ -1,3 +1,5 @@
+// i18n.js (전체 예시)
+
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 
@@ -5,16 +7,17 @@ const resources = {
   en: {
     translation: {
       welcome: "Welcome to AI Coin Helper",
-      chart: "Chart",
-      news: "News",
-      inquiry: "Inquiry",
-      fortune: "Fortune",
-      login: "Login",
-      signUp: "Sign Up",
-      darkMode: "Dark Mode",
-      lightMode: "Light Mode",
+      chart: "CHART",
+      news: "NEWS",
+      inquiry: "INQUIRY",
+      fortune: "Any worries?",
+      login: "LOGIN",
+      signUp: "SIGN UP",
+      darkMode: "DARK MODE",
+      lightMode: "LIGHT MODE",
       searchPlaceholder: "Search...",
-      search: "Search",
+      search: "SEARCH",
+      momentNow: "This is the moment", 
     },
   },
   ko: {
@@ -23,24 +26,28 @@ const resources = {
       chart: "차트",
       news: "뉴스",
       inquiry: "문의사항",
-      fortune: "운세",
+      fortune: "고민이 되나요?",
       login: "로그인",
       signUp: "회원가입",
       darkMode: "다크모드",
       lightMode: "라이트모드",
       searchPlaceholder: "검색어",
       search: "검색",
+
+      momentNow: "지금 이순간", 
     },
   },
 };
 
 i18n
-  .use(initReactI18next)
+  .use(initReactI18next) 
   .init({
     resources,
-    lng: "ko", // 기본 언어 설정
+    lng: "ko",
     fallbackLng: "ko",
-    interpolation: { escapeValue: false },
+    interpolation: {
+      escapeValue: false,
+    },
   });
 
-export default i18n; // 여기서 i18n을 export해야 Dashboard.js에서 사용할 수 있음
+export default i18n;
