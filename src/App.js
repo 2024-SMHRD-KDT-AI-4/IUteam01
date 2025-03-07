@@ -5,6 +5,8 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 
 import NoticeScreen from "./components/NoticeScreen";
 import Dashboard from "./components/Dashboard";
+import Login from "./components/Login";
+import Signup from "./components/Signup";
 
 function App() {
   const [showNotice, setShowNotice] = useState(true);
@@ -42,7 +44,10 @@ function App() {
             path="/"
             element={<Dashboard darkMode={darkMode} setDarkMode={setDarkMode} />}
           />
+           <Route path="/login" element={<Login />} />
+           <Route path="/signup" element={<Signup />} />
         </Routes>
+       
       </Router>
     </ThemeProvider>
   );

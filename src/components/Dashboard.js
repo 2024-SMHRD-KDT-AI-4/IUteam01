@@ -25,6 +25,9 @@ import NewsSection from "./NewsSection";
 import InquirySection from "./InquirySection";
 import FortuneSection from "./FortuneSection";
 import { motion } from "framer-motion";
+import axios from "axios";
+import { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 /* ================================
    1) 거래소 정보를 표로 표시하는 컴포넌트
@@ -111,6 +114,9 @@ function Dashboard({ darkMode, setDarkMode }) {
 
   const { t } = useTranslation();
 
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // 로그인 상태 관리
+  const nav = useNavigate();
+  const [nickname, setNickname] = useState("");
   /* ================================
      탭 변경: 로딩 + 0.5초 뒤 해제
   ================================ */
@@ -120,6 +126,34 @@ function Dashboard({ darkMode, setDarkMode }) {
       setActiveTab(tabName);
       setLoading(false);
     }, 500);
+  };
+  const handleLogin = () => {
+    nav('/login')
+    // axios.post("http://localhost:3307/login", {
+    //   nick:"nick"
+    // }).then((res)=>{
+    //   if (res.data.success) {
+    //     nav('/login');
+    //     setIsLoggedIn(true);
+        
+    //     setNickname(res.data.nick); // 서버에서 닉네임 반환
+    //     localStorage.setItem("nickname", res.data.nick); // 로그인 상태 유지
+    //   } else {
+    //     alert("로그인 실패");
+    //   }
+      
+    // }).catch((err) => console.error("로그인 오류:", err));
+  
+  };
+
+  const handleSignUp = () => {
+    nav('/signup');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("nick"); // localStorage에서 닉네임 제거
+    setNickname(null); // 상태 업데이트하여 UI 변경
+    nav('/');
   };
 
   /* ================================
@@ -152,6 +186,31 @@ function Dashboard({ darkMode, setDarkMode }) {
             <MenuItem value="ko">🇰🇷 한국어</MenuItem>
             <MenuItem value="en">🇺🇸 English</MenuItem>
           </Select>
+          {
+            window.localStorage.getItem('nick') != null? 
+            
+            <div> 
+              <h1>{ window.localStorage.getItem('nick')}님 환영합니다</h1>
+              <Button color="inherit" onClick={handleLogout}>
+            로그아웃
+          </Button>
+     
+          </div>
+          : 
+            <div>
+            <Button color="inherit" onClick={handleLogin}>
+            로그인
+          </Button>
+          <Button color="inherit" onClick={handleSignUp}>
+            회원가입
+          </Button></div>
+          }
+           {/* <Button color="inherit" onClick={handleLogin}>
+                로그인
+              </Button>
+              <Button color="inherit" onClick={handleSignUp}>
+                회원가입
+              </Button> */}
         </Toolbar>
       </AppBar>
 
