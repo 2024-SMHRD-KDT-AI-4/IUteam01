@@ -63,7 +63,6 @@ function ExchangeInfoSection() {
         <TableBody>
           {exchanges.map((exchange, index) => (
             <TableRow key={index} sx={{ minHeight: 80 }}>
-              {/* 로고 표시 */}
               <TableCell align="center">
                 <Box
                   sx={{
@@ -80,13 +79,9 @@ function ExchangeInfoSection() {
                   />
                 </Box>
               </TableCell>
-
-              {/* 거래소 이름 */}
               <TableCell align="center" sx={{ fontSize: "16px", fontWeight: "500" }}>
                 {exchange.name}
               </TableCell>
-
-              {/* 방문 버튼 */}
               <TableCell align="center">
                 <Button
                   variant="contained"
@@ -111,17 +106,10 @@ function ExchangeInfoSection() {
 function Dashboard({ darkMode, setDarkMode }) {
   // 탭 상태
   const [activeTab, setActiveTab] = useState("chart");
-  // 검색어 상태
-  const [searchTerm, setSearchTerm] = useState("");
   // 로딩 상태 (탭 전환 시)
   const [loading, setLoading] = useState(false);
-  // 자동완성 용
-  const [suggestions, setSuggestions] = useState([]);
 
   const { t } = useTranslation();
-
-  // 자동완성 키워드
-  const availableKeywords = ["Bitcoin", "Ethereum", "Crypto", "Stock", "Gold"];
 
   /* ================================
      탭 변경: 로딩 + 0.5초 뒤 해제
@@ -132,31 +120,6 @@ function Dashboard({ darkMode, setDarkMode }) {
       setActiveTab(tabName);
       setLoading(false);
     }, 500);
-  };
-
-  /* ================================
-     검색어 입력 -> 자동완성 목록
-  ================================ */
-  const handleSearchChange = (e) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    if (value.length > 0) {
-      setSuggestions(
-        availableKeywords.filter((item) =>
-          item.toLowerCase().includes(value.toLowerCase())
-        )
-      );
-    } else {
-      setSuggestions([]);
-    }
-  };
-
-  /* ================================
-     검색 제출
-  ================================ */
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    alert(`검색어: ${searchTerm}`);
   };
 
   /* ================================
@@ -175,47 +138,7 @@ function Dashboard({ darkMode, setDarkMode }) {
             {t("welcome")}
           </Typography>
 
-          {/* 검색 폼 (자동완성) */}
-          <Box component="form" onSubmit={handleSearchSubmit} sx={{ position: "relative", marginRight: "16px" }}>
-            <input
-              type="text"
-              placeholder={t("searchPlaceholder")}
-              value={searchTerm}
-              onChange={handleSearchChange}
-              style={{ marginRight: "8px" }}
-            />
-            <Button variant="contained" color="secondary" type="submit">
-              {t("search")}
-            </Button>
-
-            {/* 자동완성 목록 */}
-            {suggestions.length > 0 && (
-              <Box
-                sx={{
-                  position: "absolute",
-                  top: "40px",
-                  left: 0,
-                  width: "100%",
-                  backgroundColor: "white",
-                  border: "1px solid #ccc",
-                  zIndex: 999
-                }}
-              >
-                {suggestions.map((item, idx) => (
-                  <Box
-                    key={idx}
-                    sx={{ padding: "5px", cursor: "pointer", ":hover": { backgroundColor: "#eee" } }}
-                    onClick={() => {
-                      setSearchTerm(item);
-                      setSuggestions([]);
-                    }}
-                  >
-                    {item}
-                  </Box>
-                ))}
-              </Box>
-            )}
-          </Box>
+          {/* 검색창 삭제 */}
 
           {/* 다크모드 토글 (Switch) */}
           <Switch checked={darkMode} onChange={toggleDarkMode} color="default" />
