@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import './Signup.css' // 스타일 파일 import
 import { useNavigate } from 'react-router-dom'
 
+
 const Signup = () => {
   const [inputId, setId] = useState('')
   const [inputPw, setPw] = useState('')
@@ -10,7 +11,7 @@ const Signup = () => {
   const [inputGender, setGd] = useState('')
   const [inputBirthday, setBd] = useState('')
   const [inputNick, setNick] = useState('')
-  const [inputRole, setRole] = useState('회원') // 기본값을 '회원'으로 설정
+  const [inputRole, setRole] = useState('')
   const [input_AT, setAt] = useState('')
   const nav = useNavigate()
 
@@ -22,9 +23,10 @@ const Signup = () => {
       gd: inputGender,
       bd: inputBirthday,
       nick: inputNick,
-      role: inputRole, // '회원'으로 고정됨
+      role: inputRole,
       at: input_AT
-    }).then((res) => {
+    }
+    ).then((res) => {
       console.log(res);
       if (res.data === "회원가입 성공") {
         nav("/")
@@ -64,7 +66,7 @@ const Signup = () => {
         <input type="text" placeholder="닉네임을 입력하세요" onChange={(e) => setNick(e.target.value)} />
 
         <label>역할</label>
-        <input type="text" value={inputRole} readOnly /> {/* 역할을 '회원'으로 고정 */}
+        <input type="text" placeholder="역할을 입력하세요(관리자,회원)" onChange={(e) => setRole(e.target.value)} />
 
         <label>가입 날짜</label>
         <input type="date" onChange={(e) => setAt(e.target.value)} />

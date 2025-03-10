@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+// src/components/Dashboard.js
+import React, { useState, useEffect } from "react";
 import {
   AppBar,
   Toolbar,
@@ -7,14 +8,7 @@ import {
   Box,
   Switch,
   Select,
-  MenuItem,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper
+  MenuItem
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import i18n from "../i18n";
@@ -24,95 +18,27 @@ import NewsSection from "./NewsSection";
 import InquirySection from "./InquirySection";
 import FortuneSection from "./FortuneSection";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
-/* ================================
-   1) 거래소 정보를 표로 표시하는 컴포넌트
-=============================== */
-function ExchangeInfoSection() {
-  const exchanges = [
-    { name: "고팍스", url: "https://www.gopax.co.kr", logo: "/logos/gopax.png" },
-    { name: "빗썸", url: "https://www.bithumb.com", logo: "/logos/bithumb.png" },
-    { name: "업비트", url: "https://upbit.com", logo: "/logos/upbit.png" },
-    { name: "코인원", url: "https://coinone.co.kr", logo: "/logos/coinone.png" },
-    { name: "코빗", url: "https://www.korbit.co.kr", logo: "/logos/korbit.png" },
-    { name: "BitMEX", url: "https://www.bitmex.com/", logo: "/logos/bitmex.png" },
-    { name: "Bittrex", url: "https://bittrexglobal.com/", logo: "/logos/bittrex.png" },
-    { name: "Coinbase", url: "https://www.coinbase.com/", logo: "/logos/coinbase.png" },
-    { name: "Kraken", url: "https://www.kraken.com/", logo: "/logos/kraken.png" },
-    { name: "Poloniex", url: "https://poloniex.com/ko/", logo: "/logos/poloniex.png" }
-  ];
-
-  return (
-    <TableContainer component={Paper} sx={{ margin: "1rem auto", maxWidth: 900 }}>
-      <Table>
-        <TableHead>
-          <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-            <TableCell align="center" sx={{ fontWeight: "bold", width: "20%" }}>
-              로고
-            </TableCell>
-            <TableCell align="center" sx={{ fontWeight: "bold", width: "40%" }}>
-              거래소
-            </TableCell>
-            <TableCell align="center" sx={{ fontWeight: "bold", width: "40%" }}>
-              사이트
-            </TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {exchanges.map((exchange, index) => (
-            <TableRow key={index} sx={{ minHeight: 80 }}>
-              <TableCell align="center">
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    height: "80px"
-                  }}
-                >
-                  <img
-                    src={exchange.logo}
-                    alt={exchange.name}
-                    style={{ width: "80px", height: "auto" }}
-                  />
-                </Box>
-              </TableCell>
-              <TableCell align="center" sx={{ fontSize: "16px", fontWeight: "500" }}>
-                {exchange.name}
-              </TableCell>
-              <TableCell align="center">
-                <Button
-                  variant="contained"
-                  color="primary"
-                  size="small"
-                  onClick={() => window.open(exchange.url, "_blank")}
-                >
-                  방문하기
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  );
-}
-
-/* ================================
-   2) 대시보드 (합본)
-=============================== */
 function Dashboard({ darkMode, setDarkMode }) {
   const [activeTab, setActiveTab] = useState("chart");
   const [loading, setLoading] = useState(false);
   const { t } = useTranslation();
-  const nav = useNavigate();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // 탭 변경 함수: 문의사항 탭 클릭 시 로그인 여부를 확인
+  // 만약 URL state로 activeTab이 전달되면 해당 탭을 활성화
+  useEffect(() => {
+    if (location.state && location.state.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
+
+  // 탭 변경 함수: 문의사항 탭 클릭 시 로그인 여부 확인
   const handleTabChange = (tabName) => {
     if (tabName === "inquiry" && !window.localStorage.getItem("nick")) {
       alert("로그인이 필요합니다. 로그인 후 이용해주세요.");
-      nav("/login");
+      navigate("/login");
       return;
     }
     setLoading(true);
@@ -123,16 +49,16 @@ function Dashboard({ darkMode, setDarkMode }) {
   };
 
   const handleLogin = () => {
-    nav("/login");
+    navigate("/login");
   };
 
   const handleSignUp = () => {
-    nav("/signup");
+    navigate("/signup");
   };
 
   const handleLogout = () => {
     localStorage.removeItem("nick");
-    nav("/");
+    navigate("/");
   };
 
   const toggleDarkMode = () => {
@@ -141,7 +67,6 @@ function Dashboard({ darkMode, setDarkMode }) {
 
   return (
     <Box sx={{ minHeight: "100vh" }}>
-      {/* 상단 AppBar */}
       <AppBar position="static">
         <Toolbar>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
@@ -202,15 +127,8 @@ function Dashboard({ darkMode, setDarkMode }) {
         >
           {t("inquiry")}
         </Button>
-        <Button
-          variant={activeTab === "exchangeInfo" ? "contained" : "outlined"}
-          onClick={() => handleTabChange("exchangeInfo")}
-        >
-          🏦 거래소 정보
-        </Button>
       </Box>
 
-      {/* 로딩 또는 탭 컨텐츠 */}
       {loading ? (
         <Typography sx={{ textAlign: "center", marginTop: "20px" }}>
           ⏳ Loading...
@@ -227,7 +145,6 @@ function Dashboard({ darkMode, setDarkMode }) {
           {activeTab === "news" && <NewsSection />}
           {activeTab === "fortune" && <FortuneSection />}
           {activeTab === "inquiry" && <InquirySection />}
-          {activeTab === "exchangeInfo" && <ExchangeInfoSection />}
         </Box>
       )}
     </Box>
