@@ -42,8 +42,12 @@ def compute_macd(prices, short_period=12, long_period=26, signal_period=9):
 
 @app.route("/api/bitcoin_data")
 def bitcoin_data():
-    # 쿼리 파라미터 type: "5min" 또는 "daily" (기본은 "5min")
+    # 쿼리 파라미터로 type과 market을 받아옵니다.
+    # type: "5min" 또는 "daily" (기본은 "5min")
+    # market: 예) "KRW-BTC", "KRW-ETH" 등 (기본은 "KRW-BTC")
     type_param = request.args.get("type", "5min")
+    market = request.args.get("market", "KRW-BTC")
+    
     if type_param == "5min":
         url = "https://api.upbit.com/v1/candles/minutes/5"
     elif type_param == "daily":
@@ -51,20 +55,19 @@ def bitcoin_data():
     else:
         return jsonify({"error": "Invalid type parameter. Use '5min' or 'daily'."}), 400
 
-    # 기본 200개의 데이터를 요청
     count = request.args.get("count", 200)
     try:
         count = int(count)
     except ValueError:
         count = 200
 
-    params = {"market": "KRW-BTC", "count": count}
+    params = {"market": market, "count": count}
     response = requests.get(url, params=params)
     if response.status_code != 200:
         return jsonify({"error": "Failed to retrieve data from Upbit API"}), 500
 
     data = response.json()
-    # Upbit API는 최신 데이터가 앞에 있으므로, 계산을 위해 오래된 순으로 정렬
+    # Upbit API는 최신 데이터가 앞에 있으므로, 계산을 위해 오래된 순으로 정렬합니다.
     data.reverse()
     prices = [item["trade_price"] for item in data]
 

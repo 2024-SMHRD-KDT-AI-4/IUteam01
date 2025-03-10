@@ -10,7 +10,7 @@ function NewsSection() {
   // 입력창에 입력되는 검색어 상태
   const [searchTerm, setSearchTerm] = useState("");
   // 실제 API 호출에 사용할 검색어 (초기값은 "cryptocurrency")
-  const [query, setQuery] = useState("cryptocurrency");
+  const [query, setQuery] = useState("Bitcoin");
 
   useEffect(() => {
     setLoading(true);
@@ -55,13 +55,13 @@ function NewsSection() {
             onClick={() => setNewsLanguage("en")}
             variant={newsLanguage === "en" ? "contained" : "outlined"}
           >
-            English
+            해외
           </Button>
           <Button
             onClick={() => setNewsLanguage("ko")}
             variant={newsLanguage === "ko" ? "contained" : "outlined"}
           >
-            한국어
+            국내
           </Button>
         </ButtonGroup>
         
