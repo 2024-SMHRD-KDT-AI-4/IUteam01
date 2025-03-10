@@ -22,21 +22,27 @@ const Signup = () => {
       gd: inputGender,
       bd: inputBirthday,
       nick: inputNick,
-      role: inputRole, // '회원'으로 고정됨
+      role: inputRole,
       at: input_AT
     }).then((res) => {
-      console.log(res);
-      if (res.data === "회원가입 성공") {
-        nav("/")
+      console.log("서버 응답:", res.data);
+  
+      // 백엔드가 { message: "회원가입 성공" } 형식으로 응답해야 함
+      if (res.data.message === "회원가입 성공") {  
+        alert("회원가입이 완료되었습니다!");
+        setTimeout(() => {
+          nav("/"); // 라우터 이동
+        }, 500);
       } else {
-        console.log("회원가입 실패");
-        nav("/signup")
+        alert("회원가입 실패: " + JSON.stringify(res.data));
+        console.log("회원가입 실패, 응답 데이터:", res.data);
       }
     }).catch((error) => {
       console.error("오류 발생:", error);
+      alert("회원가입 중 오류가 발생했습니다.");
     });
   }
-
+  
   return (
     <div className="signup-container">
       <h2>회원가입</h2>
@@ -64,7 +70,7 @@ const Signup = () => {
         <input type="text" placeholder="닉네임을 입력하세요" onChange={(e) => setNick(e.target.value)} />
 
         <label>역할</label>
-        <input type="text" value={inputRole} readOnly /> {/* 역할을 '회원'으로 고정 */}
+        <input type="text" value={"회원"} readOnly /> {/* 역할을 '회원'으로 고정 */}
 
         <label>가입 날짜</label>
         <input type="date" onChange={(e) => setAt(e.target.value)} />
