@@ -1,4 +1,3 @@
-// src/components/Dashboard.js
 import React, { useState } from "react";
 import {
   AppBar,
@@ -25,15 +24,12 @@ import NewsSection from "./NewsSection";
 import InquirySection from "./InquirySection";
 import FortuneSection from "./FortuneSection";
 import { motion } from "framer-motion";
-import axios from "axios";
-import { useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 /* ================================
    1) 거래소 정보를 표로 표시하는 컴포넌트
 =============================== */
 function ExchangeInfoSection() {
-  // 거래소 데이터 (이름, URL, 로고 이미지)
   const exchanges = [
     { name: "고팍스", url: "https://www.gopax.co.kr", logo: "/logos/gopax.png" },
     { name: "빗썸", url: "https://www.bithumb.com", logo: "/logos/bithumb.png" },
@@ -107,58 +103,38 @@ function ExchangeInfoSection() {
    2) 대시보드 (합본)
 =============================== */
 function Dashboard({ darkMode, setDarkMode }) {
-  // 탭 상태
   const [activeTab, setActiveTab] = useState("chart");
-  // 로딩 상태 (탭 전환 시)
   const [loading, setLoading] = useState(false);
-
   const { t } = useTranslation();
-
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // 로그인 상태 관리
   const nav = useNavigate();
-  const [nickname, setNickname] = useState("");
-  /* ================================
-     탭 변경: 로딩 + 0.5초 뒤 해제
-  ================================ */
+
+  // 탭 변경 함수: 문의사항 탭 클릭 시 로그인 여부를 확인
   const handleTabChange = (tabName) => {
+    if (tabName === "inquiry" && !window.localStorage.getItem("nick")) {
+      alert("로그인이 필요합니다. 로그인 후 이용해주세요.");
+      nav("/login");
+      return;
+    }
     setLoading(true);
     setTimeout(() => {
       setActiveTab(tabName);
       setLoading(false);
     }, 500);
   };
+
   const handleLogin = () => {
-    nav('/login')
-    // axios.post("http://localhost:3307/login", {
-    //   nick:"nick"
-    // }).then((res)=>{
-    //   if (res.data.success) {
-    //     nav('/login');
-    //     setIsLoggedIn(true);
-        
-    //     setNickname(res.data.nick); // 서버에서 닉네임 반환
-    //     localStorage.setItem("nickname", res.data.nick); // 로그인 상태 유지
-    //   } else {
-    //     alert("로그인 실패");
-    //   }
-      
-    // }).catch((err) => console.error("로그인 오류:", err));
-  
+    nav("/login");
   };
 
   const handleSignUp = () => {
-    nav('/signup');
+    nav("/signup");
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("nick"); // localStorage에서 닉네임 제거
-    setNickname(null); // 상태 업데이트하여 UI 변경
-    nav('/');
+    localStorage.removeItem("nick");
+    nav("/");
   };
 
-  /* ================================
-     다크모드 토글 (Switch)
-  ================================ */
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
   };
@@ -171,13 +147,7 @@ function Dashboard({ darkMode, setDarkMode }) {
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             {t("welcome")}
           </Typography>
-
-          {/* 검색창 삭제 */}
-
-          {/* 다크모드 토글 (Switch) */}
           <Switch checked={darkMode} onChange={toggleDarkMode} color="default" />
-
-          {/* 언어 선택 (Select) */}
           <Select
             value={i18n.language}
             onChange={(e) => i18n.changeLanguage(e.target.value)}
@@ -186,31 +156,23 @@ function Dashboard({ darkMode, setDarkMode }) {
             <MenuItem value="ko">🇰🇷 한국어</MenuItem>
             <MenuItem value="en">🇺🇸 English</MenuItem>
           </Select>
-          {
-            window.localStorage.getItem('nick') != null? 
-            
-            <div> 
-              <h1>{ window.localStorage.getItem('nick')}님 환영합니다</h1>
-              <Button color="inherit" onClick={handleLogout}>
-            로그아웃
-          </Button>
-     
-          </div>
-          : 
+          {window.localStorage.getItem("nick") ? (
             <div>
-            <Button color="inherit" onClick={handleLogin}>
-            로그인
-          </Button>
-          <Button color="inherit" onClick={handleSignUp}>
-            회원가입
-          </Button></div>
-          }
-           {/* <Button color="inherit" onClick={handleLogin}>
+              <h1>{window.localStorage.getItem("nick")}님 환영합니다</h1>
+              <Button color="inherit" onClick={handleLogout}>
+                로그아웃
+              </Button>
+            </div>
+          ) : (
+            <div>
+              <Button color="inherit" onClick={handleLogin}>
                 로그인
               </Button>
               <Button color="inherit" onClick={handleSignUp}>
                 회원가입
-              </Button> */}
+              </Button>
+            </div>
+          )}
         </Toolbar>
       </AppBar>
 
@@ -248,7 +210,7 @@ function Dashboard({ darkMode, setDarkMode }) {
         </Button>
       </Box>
 
-      {/* 로딩 or 탭 컨텐츠 */}
+      {/* 로딩 또는 탭 컨텐츠 */}
       {loading ? (
         <Typography sx={{ textAlign: "center", marginTop: "20px" }}>
           ⏳ Loading...
