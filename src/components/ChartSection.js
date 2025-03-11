@@ -1,4 +1,3 @@
-// src/components/ChartSection.js
 import React, { useCallback, useState, useEffect } from "react";
 import {
   Card,
@@ -10,7 +9,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Box
+  Box,
+  Grid,
+  Divider
 } from "@mui/material";
 import ReactECharts from "echarts-for-react";
 
@@ -19,12 +20,10 @@ function ChartSection() {
   const [chartData, setChartData] = useState([]);
   const [rsiData, setRsiData] = useState([]);
   const [macdData, setMacdData] = useState([]);
+  const [trendData, setTrendData] = useState({ up_prob: 50, down_prob: 50 });
   const [loading, setLoading] = useState(false);
-  
-  // 기본 선택 코인은 BTC
   const [coinSymbol, setCoinSymbol] = useState("BTC");
 
-  // 코인 목록: 심볼과 한국어 이름을 함께 저장
   const coins = [
     { symbol: "BTC", name: "비트코인" },
     { symbol: "ETH", name: "이더리움" },
@@ -32,20 +31,16 @@ function ChartSection() {
     { symbol: "SOL", name: "솔라나" },
     { symbol: "ENS", name: "이더리움 네임 서비스" },
     { symbol: "ETC", name: "이더리움 클래식" },
-    { symbol: "TRUMPO", name: "트럼포" },
-    { symbol: "NEO", name: "네오" },
-    { symbol: "STRIKE", name: "스트라이크" },
     { symbol: "XRP", name: "리플" }
   ];
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      // Upbit API는 KRW-코인 형식으로 market 파라미터를 사용합니다.
       const market = `KRW-${coinSymbol.toUpperCase()}`;
       const response = await fetch(`http://localhost:5000/api/bitcoin_data?type=${dataType}&market=${market}`);
       const data = await response.json();
-      console.log("Fetched data:", data);
+
       setChartData(data.map(item => [item.date, item.price]));
       setRsiData(data.map(item => [item.date, item.rsi]));
       setMacdData(data.map(item => [item.date, item.macd, item.signal]));
@@ -56,34 +51,63 @@ function ChartSection() {
     }
   }, [dataType, coinSymbol]);
 
+  const fetchTrendData = useCallback(async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/coin_trend?market=KRW-${coinSymbol}`);
+      const data = await response.json();
+      setTrendData(data);
+    } catch (error) {
+      console.error("Error fetching trend data:", error);
+    }
+  }, [coinSymbol]);
+
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
-
-  const handleCoinChange = (e) => {
-    setCoinSymbol(e.target.value);
-  };
+    fetchTrendData();
+  }, [fetchData, fetchTrendData]);
 
   return (
-    <Card>
+    <Card sx={{ marginBottom: "20px" }}>
       <CardContent>
-        <Typography variant="h5">
-          {dataType === "5min"
-            ? `${coinSymbol.toUpperCase()} 5분봉 차트`
-            : `${coinSymbol.toUpperCase()} 일봉 차트`}
+        {/* 📊 상승/하락 확률 차트 (맨 위) */}
+        <Typography variant="h5" align="center" sx={{ fontWeight: "bold", marginBottom: "10px" }}>
+          {coinSymbol.toUpperCase()} 상승/하락 확률
         </Typography>
-        <Typography variant="body2">
-          {coinSymbol.toUpperCase()}의 가격, RSI, MACD를 표시합니다.
+        <ReactECharts
+          option={{
+            title: { text: "📊 상승/하락 확률", left: "center" },
+            tooltip: { trigger: "item", formatter: "{b} : {c}%" },
+            series: [
+              {
+                type: "pie",
+                radius: "65%",
+                data: [
+                  { value: trendData.up_prob, name: "📈 상승 가능성" },
+                  { value: trendData.down_prob, name: "📉 하락 가능성" }
+                ],
+                emphasis: {
+                  itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: "rgba(0, 0, 0, 0.5)" }
+                }
+              }
+            ]
+          }}
+          style={{ height: "350px", width: "100%" }}
+        />
+
+        <Divider sx={{ margin: "20px 0" }} />
+
+        {/* 📈 가격, RSI, MACD 차트 (아래 정렬) */}
+        <Typography variant="h5" align="center" sx={{ fontWeight: "bold", marginBottom: "10px" }}>
+          {coinSymbol.toUpperCase()} {dataType === "5min" ? "5분봉 차트" : "일봉 차트"}
         </Typography>
-        {/* 코인 선택 드롭다운 */}
-        <FormControl fullWidth sx={{ margin: "1rem 0" }}>
+
+        <FormControl fullWidth sx={{ marginBottom: "1rem" }}>
           <InputLabel id="coin-select-label">코인 선택</InputLabel>
           <Select
             labelId="coin-select-label"
             id="coin-select"
             value={coinSymbol}
-            label="코인 선택"
-            onChange={handleCoinChange}
+            onChange={(e) => setCoinSymbol(e.target.value)}
           >
             {coins.map((coin) => (
               <MenuItem key={coin.symbol} value={coin.symbol}>
@@ -93,19 +117,12 @@ function ChartSection() {
           </Select>
         </FormControl>
 
-        {/* 버튼들을 한 줄에 정렬 */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, marginBottom: 2 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", gap: 2, marginBottom: 2 }}>
           <ButtonGroup>
-            <Button
-              variant={dataType === "5min" ? "contained" : "outlined"}
-              onClick={() => setDataType("5min")}
-            >
+            <Button variant={dataType === "5min" ? "contained" : "outlined"} onClick={() => setDataType("5min")}>
               5분봉
             </Button>
-            <Button
-              variant={dataType === "daily" ? "contained" : "outlined"}
-              onClick={() => setDataType("daily")}
-            >
+            <Button variant={dataType === "daily" ? "contained" : "outlined"} onClick={() => setDataType("daily")}>
               일봉
             </Button>
           </ButtonGroup>
@@ -115,95 +132,52 @@ function ChartSection() {
         </Box>
 
         {loading ? (
-          <Typography variant="body2">데이터 로딩 중...</Typography>
+          <Typography align="center">📊 데이터 로딩 중...</Typography>
         ) : (
           <>
             {chartData.length > 0 && (
               <ReactECharts
-                key={`chart-${chartData.length}`}
                 option={{
-                  title: {
-                    text: dataType === "5min"
-                      ? `${coinSymbol.toUpperCase()} 가격 (5분봉)`
-                      : `${coinSymbol.toUpperCase()} 가격 (일봉)`
-                  },
+                  title: { text: "📈 코인 가격 변동", left: "center" },
                   tooltip: { trigger: "axis" },
-                  xAxis: {
-                    type: "category",
-                    data: chartData.map(item => item[0]),
-                    name: "날짜"
-                  },
+                  xAxis: { type: "category", data: chartData.map(item => item[0]) },
                   yAxis: { type: "value", name: "가격" },
-                  series: [{
-                    data: chartData.map(item => item[1]),
-                    type: "line",
-                    smooth: true
-                  }]
+                  series: [{ data: chartData.map(item => item[1]), type: "line", smooth: true }]
                 }}
                 style={{ height: "300px", width: "100%" }}
               />
             )}
+
+            <Divider sx={{ margin: "10px 0" }} />
 
             {rsiData.length > 0 && (
               <ReactECharts
-                key={`rsi-${rsiData.length}`}
                 option={{
-                  title: {
-                    text: dataType === "5min"
-                      ? `${coinSymbol.toUpperCase()} RSI (5분봉)`
-                      : `${coinSymbol.toUpperCase()} RSI (일봉)`
-                  },
+                  title: { text: "📊 RSI 지표", left: "center" },
                   tooltip: { trigger: "axis" },
-                  xAxis: {
-                    type: "category",
-                    data: rsiData.map(item => item[0]),
-                    name: "날짜"
-                  },
+                  xAxis: { type: "category", data: rsiData.map(item => item[0]) },
                   yAxis: { type: "value", name: "RSI 값", min: 0, max: 100 },
-                  series: [{
-                    data: rsiData.map(item => item[1]),
-                    type: "line",
-                    smooth: true,
-                    color: "blue"
-                  }]
+                  series: [{ data: rsiData.map(item => item[1]), type: "line", smooth: true }]
                 }}
-                style={{ height: "300px", width: "100%" }}
+                style={{ height: "250px", width: "100%" }}
               />
             )}
 
+            <Divider sx={{ margin: "10px 0" }} />
+
             {macdData.length > 0 && (
               <ReactECharts
-                key={`macd-${macdData.length}`}
                 option={{
-                  title: {
-                    text: dataType === "5min"
-                      ? `${coinSymbol.toUpperCase()} MACD & Signal (5분봉)`
-                      : `${coinSymbol.toUpperCase()} MACD & Signal (일봉)`
-                  },
+                  title: { text: "📉 MACD & Signal", left: "center" },
                   tooltip: { trigger: "axis" },
-                  xAxis: {
-                    type: "category",
-                    data: macdData.map(item => item[0]),
-                    name: "날짜"
-                  },
+                  xAxis: { type: "category", data: macdData.map(item => item[0]) },
                   yAxis: { type: "value", name: "값" },
                   series: [
-                    {
-                      name: "MACD",
-                      data: macdData.map(item => item[1]),
-                      type: "line",
-                      smooth: true
-                    },
-                    {
-                      name: "Signal",
-                      data: macdData.map(item => item[2]),
-                      type: "line",
-                      smooth: true,
-                      color: "red"
-                    }
+                    { name: "MACD", data: macdData.map(item => item[1]), type: "line", smooth: true },
+                    { name: "Signal", data: macdData.map(item => item[2]), type: "line", smooth: true, color: "red" }
                   ]
                 }}
-                style={{ height: "300px", width: "100%" }}
+                style={{ height: "250px", width: "100%" }}
               />
             )}
           </>
