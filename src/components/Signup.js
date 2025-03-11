@@ -10,23 +10,53 @@ const Signup = () => {
   const [inputGender, setGd] = useState("");
   const [inputBirthday, setBd] = useState("");
   const [inputNick, setNick] = useState("");
-  const [inputRole, setRole] = useState("회원"); // 기본값을 '회원'으로 설정
-  const [input_AT, setAt] = useState(""); // 가입 날짜
-  
+  const [inputRole, setRole] = useState("회원");
+  const [input_AT, setAt] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isIdChecked, setIsIdChecked] = useState(false); // 중복 체크 여부
+
   const nav = useNavigate();
 
-  // 📌 현재 날짜를 YYYY-MM-DD 형식으로 변환하는 함수
-  const getCurrentDate = () => {
-    const today = new Date();
-    return today.toISOString().split("T")[0]; // "YYYY-MM-DD" 형식으로 변환
-  };
-
-  // 📌 컴포넌트가 처음 렌더링될 때 가입 날짜를 자동 설정
   useEffect(() => {
     setAt(getCurrentDate());
   }, []);
 
+  const getCurrentDate = () => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  };
+
+  // 📌 아이디 중복 확인 함수
+  const checkIdDuplicate = () => {
+    if (!inputId.trim()) {
+      alert("아이디를 입력해주세요.");
+      return;
+    }
+
+    axios
+      .post("http://localhost:3307/check-id", { id: inputId })
+      .then((res) => {
+        alert(res.data.message);
+        setIsIdChecked(true);
+      })
+      .catch((error) => {
+        console.error("아이디 중복 체크 오류:", error);
+        if (error.response && error.response.status === 409) {
+          alert(error.response.data.error);
+        } else {
+          alert("아이디 중복 체크 중 오류가 발생했습니다.");
+        }
+        setIsIdChecked(false);
+      });
+  };
+
+  // 📌 회원가입 요청
   function trySignup() {
+    if (!isIdChecked) {
+      alert("아이디 중복 확인을 해주세요.");
+      return;
+    }
+
     axios
       .post("http://localhost:3307/signup", {
         id: inputId,
@@ -36,24 +66,22 @@ const Signup = () => {
         bd: inputBirthday,
         nick: inputNick,
         role: inputRole,
-        at: input_AT, // 가입 날짜 포함
+        at: input_AT,
       })
       .then((res) => {
         console.log("서버 응답:", res.data);
-
         if (res.data.message === "회원가입 성공") {
           alert("회원가입이 완료되었습니다!");
           setTimeout(() => {
-            nav("/"); // 라우터 이동
+            nav("/");
           }, 500);
         } else {
           alert("회원가입 실패: " + JSON.stringify(res.data));
-          console.log("회원가입 실패, 응답 데이터:", res.data);
         }
       })
       .catch((error) => {
         console.error("오류 발생:", error);
-        alert("모든 정보를 입력해주세요.");
+        alert("회원가입에 실패하였습니다.");
       });
   }
 
@@ -62,7 +90,18 @@ const Signup = () => {
       <h2>회원가입</h2>
       <form>
         <label>아이디</label>
-        <input type="text" placeholder="아이디를 입력하세요" onChange={(e) => setId(e.target.value)} />
+        <input
+          type="text"
+          placeholder="아이디를 입력하세요"
+          value={inputId}
+          onChange={(e) => {
+            setId(e.target.value);
+            setIsIdChecked(false); // 아이디가 변경되면 다시 중복 체크 필요
+          }}
+        />
+        <button type="button" onClick={checkIdDuplicate}>
+          아이디 중복 확인
+        </button>
 
         <label>비밀번호</label>
         <input type="password" placeholder="비밀번호를 입력하세요" onChange={(e) => setPw(e.target.value)} />
@@ -87,7 +126,7 @@ const Signup = () => {
         <input type="text" value={"회원"} readOnly />
 
         <label>가입 날짜</label>
-        <input type="date" value={input_AT} readOnly /> {/* 자동 설정된 날짜 표시 */}
+        <input type="date" value={input_AT} readOnly />
 
         <button type="button" onClick={trySignup}>
           회원가입
