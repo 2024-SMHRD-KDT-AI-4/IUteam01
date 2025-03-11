@@ -18,6 +18,7 @@ const resources = {
       searchPlaceholder: "Search...",
       search: "SEARCH",
       momentNow: "This is the moment", 
+      exchangeInfo: "Exchange Info"
     },
   },
   ko: {
@@ -32,6 +33,7 @@ const resources = {
       darkMode: "다크모드",
       lightMode: "라이트모드",
       searchPlaceholder: "검색어",
+      exchangeInfo: "거래서 정보",
       search: "검색",
 
       momentNow: "지금 이순간", 

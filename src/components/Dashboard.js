@@ -151,10 +151,10 @@ function Dashboard({ darkMode, setDarkMode }) {
           <Select
             value={i18n.language}
             onChange={(e) => i18n.changeLanguage(e.target.value)}
-            sx={{ marginLeft: "16px", backgroundColor: "white", borderRadius: "5px" }}
+            sx={{ marginLeft: "16px", backgroundColor: "#008080", borderRadius: "5px" }}
           >
-            <MenuItem value="ko">🇰🇷 한국어</MenuItem>
-            <MenuItem value="en">🇺🇸 English</MenuItem>
+            <MenuItem value="ko" sx={{ color: "#1976d2" }}>🇰🇷 한국어</MenuItem>
+            <MenuItem value="en" sx={{ color: "#ffa000" }}>🇺🇸 English</MenuItem>
           </Select>
           {window.localStorage.getItem("nick") ? (
             <div>
@@ -200,13 +200,13 @@ function Dashboard({ darkMode, setDarkMode }) {
           variant={activeTab === "inquiry" ? "contained" : "outlined"}
           onClick={() => handleTabChange("inquiry")}
         >
-          {t("inquiry")}
+          📩 {t("inquiry")}
         </Button>
         <Button
           variant={activeTab === "exchangeInfo" ? "contained" : "outlined"}
           onClick={() => handleTabChange("exchangeInfo")}
         >
-          🏦 거래소 정보
+          🏦 {t("exchangeInfo")}
         </Button>
       </Box>
 

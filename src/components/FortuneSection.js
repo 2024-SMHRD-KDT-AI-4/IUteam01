@@ -61,7 +61,7 @@ function FortuneSection() {
     "금전적인 문제를 신중히 다루는 것이 중요한 하루입니다.",
   ];
 
-  // 위 배열과 1:1 매칭되는 영어 운세 목록
+  // 영어 운세 목록 (한국어 배열과 인덱스 1:1 매칭)
   const fortunesEN = [
     // Positive
     "A new opportunity may come your way today!",
@@ -116,27 +116,123 @@ function FortuneSection() {
     "Handle financial matters carefully—it's important today.",
   ];
 
-  // 운세를 뽑기 위한 index
   const [fortuneIndex, setFortuneIndex] = useState(0);
 
-  // 컴포넌트 마운트 시 랜덤 index 생성
+  // 로딩 여부 상태 (버튼을 누른 뒤 3초 대기 시 true)
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 마운트 시 초기 운세 생성
   useEffect(() => {
-    const randomIndex = Math.floor(Math.random() * fortunesKR.length);
-    setFortuneIndex(randomIndex);
+    generateFortune();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 언어(i18n.language)가 "ko"면 한글 운세, "en"이면 영어 운세
+  // 운세를 3초 뒤에 새로 뽑는 함수
+  const generateFortune = () => {
+    setIsLoading(true); // 로딩 시작
+    setTimeout(() => {
+      const randomIndex = Math.floor(Math.random() * fortunesKR.length);
+      setFortuneIndex(randomIndex);
+      setIsLoading(false); // 로딩 종료
+    }, 2000);
+  };
+
+  // 현재 언어에 맞춰서 운세 선택
   const fortuneText =
-    i18n.language === "ko"
-      ? fortunesKR[fortuneIndex]
-      : fortunesEN[fortuneIndex];
+    i18n.language === "ko" ? fortunesKR[fortuneIndex] : fortunesEN[fortuneIndex];
 
   return (
-    <div style={{ padding: "1rem" }}>
-      <h2>🔮 {t("momentNow")}</h2> {/* ← "지금 이순간" / "This is the moment" */}
-      <p>{fortuneText}</p>
-    </div>
-      );
-    }
+    <>
+      {/* 스피너용 CSS 정의 (회전 애니메이션) */}
+      <style>
+        {`
+          .spinner {
+            width: 60px; /* 크기도 키워서 눈에 잘 띄게 */
+            height: 60px;
+            border: 6px solid #ccc;
+            border-top: 6px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+            margin-bottom: 1rem;
+          }
+
+          @keyframes spin {
+            0%   { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
+
+      <div
+        style={{
+          minHeight: "calc(100vh - 60px)",
+          padding: "2rem",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: "600px",
+            margin: "0 auto",
+            borderRadius: "8px",
+            padding: "2rem",
+            textAlign: "center",
+            border: "2px solid #eee",
+            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+          }}
+        >
+          <h2 style={{ marginBottom: "1rem", fontWeight: "bold", fontSize: "1.8rem" }}>
+            🔮 {t("momentNow")}
+          </h2>
+
+          {isLoading ? (
+            <div style={{ marginBottom: "2rem" }}>
+              <div className="spinner" />
+              <p style={{ fontSize: "1.6rem", fontWeight: "500" }}>
+                {i18n.language === "ko"
+                  ? "운세를 예측중입니다..."
+                  : "Predicting your fortune..."}
+              </p>
+              {/* 로딩 중에는 버튼을 숨기므로 button 자체를 렌더링하지 않음 */}
+            </div>
+          ) : (
+            <>
+              {/* 운세 텍스트 */}
+              <p
+                style={{
+                  marginBottom: "2rem",
+                  fontSize: "2.2rem",
+                  lineHeight: "1.4",
+                  fontWeight: "400",
+                  padding: "1rem",
+                  borderRadius: "8px",
+                  border: "1px dashed #ddd",
+                }}
+              >
+                {fortuneText}
+              </p>
+
+              {/* 버튼: 로딩이 아닐 때만 표시 */}
+              <button
+                onClick={generateFortune}
+                style={{
+                  backgroundColor: "#007bff",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "4px",
+                  padding: "0.8rem 1.6rem",
+                  cursor: "pointer",
+                  fontSize: "1.1rem",
+                }}
+              >
+                {i18n.language === "ko" ? "운세 다시 예측" : "Fortune Telling Again"}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
 
 export default FortuneSection;
