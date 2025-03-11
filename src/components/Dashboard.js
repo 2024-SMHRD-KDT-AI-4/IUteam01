@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   AppBar,
   Toolbar,
@@ -16,6 +16,7 @@ import {
   TableRow,
   Paper
 } from "@mui/material";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
 import i18n from "../i18n";
 
@@ -26,9 +27,6 @@ import FortuneSection from "./FortuneSection";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
-/* ================================
-   1) 거래소 정보를 표로 표시하는 컴포넌트
-=============================== */
 function ExchangeInfoSection() {
   const exchanges = [
     { name: "고팍스", url: "https://www.gopax.co.kr", logo: "/logos/gopax.png" },
@@ -99,16 +97,29 @@ function ExchangeInfoSection() {
   );
 }
 
-/* ================================
-   2) 대시보드 (합본)
-=============================== */
 function Dashboard({ darkMode, setDarkMode }) {
   const [activeTab, setActiveTab] = useState("chart");
   const [loading, setLoading] = useState(false);
   const { t } = useTranslation();
   const nav = useNavigate();
 
-  // 탭 변경 함수: 문의사항 탭 클릭 시 로그인 여부를 확인
+  // 다크모드 외에 RGB 색상 선택 상태 추가 (기본값: teal)
+  const [customColor, setCustomColor] = useState("#008080");
+
+  // customColor와 darkMode에 기반해 테마를 동적으로 생성
+  const theme = useMemo(
+    () =>
+      createTheme({
+        palette: {
+          mode: darkMode ? "dark" : "light",
+          primary: {
+            main: customColor
+          }
+        }
+      }),
+    [customColor, darkMode]
+  );
+
   const handleTabChange = (tabName) => {
     if (tabName === "inquiry" && !window.localStorage.getItem("nick")) {
       alert("로그인이 필요합니다. 로그인 후 이용해주세요.");
@@ -140,97 +151,121 @@ function Dashboard({ darkMode, setDarkMode }) {
   };
 
   return (
-    <Box sx={{ minHeight: "100vh" }}>
-      {/* 상단 AppBar */}
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            {t("welcome")}
-          </Typography>
-          <Switch checked={darkMode} onChange={toggleDarkMode} color="default" />
-          <Select
-            value={i18n.language}
-            onChange={(e) => i18n.changeLanguage(e.target.value)}
-            sx={{ marginLeft: "16px", backgroundColor: "#008080", borderRadius: "5px" }}
+    <ThemeProvider theme={theme}>
+      <Box sx={{ minHeight: "100vh" }}>
+        {/* AppBar는 테마의 primary 색상을 자동 적용 */}
+        <AppBar position="static">
+          <Toolbar>
+            <Typography variant="h6" sx={{ flexGrow: 1 }}>
+              {t("welcome")}
+            </Typography>
+            <Switch checked={darkMode} onChange={toggleDarkMode} color="default" />
+            {/* 색상 선택기 */}
+            <input
+              type="color"
+              value={customColor}
+              onChange={(e) => setCustomColor(e.target.value)}
+              style={{
+                marginLeft: "16px",
+                border: "none",
+                width: "40px",
+                height: "40px",
+                cursor: "pointer",
+                backgroundColor: "transparent"
+              }}
+            />
+            <Select
+              value={i18n.language}
+              onChange={(e) => i18n.changeLanguage(e.target.value)}
+              sx={{
+                marginLeft: "16px",
+                backgroundColor: "#008080",
+                borderRadius: "5px"
+              }}
+            >
+              <MenuItem value="ko" sx={{ color: "#1976d2" }}>
+                🇰🇷 한국어
+              </MenuItem>
+              <MenuItem value="en" sx={{ color: "#ffa000" }}>
+                🇺🇸 English
+              </MenuItem>
+            </Select>
+            {window.localStorage.getItem("nick") ? (
+              <div>
+                <Typography variant="h6">
+                  {window.localStorage.getItem("nick")}님 환영합니다
+                </Typography>
+                <Button color="inherit" onClick={handleLogout}>
+                  로그아웃
+                </Button>
+              </div>
+            ) : (
+              <div>
+                <Button color="inherit" onClick={handleLogin}>
+                  로그인
+                </Button>
+                <Button color="inherit" onClick={handleSignUp}>
+                  회원가입
+                </Button>
+              </div>
+            )}
+          </Toolbar>
+        </AppBar>
+
+        <Box sx={{ padding: "1rem", display: "flex", gap: "1rem" }}>
+          <Button
+            variant={activeTab === "chart" ? "contained" : "outlined"}
+            onClick={() => handleTabChange("chart")}
           >
-            <MenuItem value="ko" sx={{ color: "#1976d2" }}>🇰🇷 한국어</MenuItem>
-            <MenuItem value="en" sx={{ color: "#ffa000" }}>🇺🇸 English</MenuItem>
-          </Select>
-          {window.localStorage.getItem("nick") ? (
-            <div>
-              <h1>{window.localStorage.getItem("nick")}님 환영합니다</h1>
-              <Button color="inherit" onClick={handleLogout}>
-                로그아웃
-              </Button>
-            </div>
-          ) : (
-            <div>
-              <Button color="inherit" onClick={handleLogin}>
-                로그인
-              </Button>
-              <Button color="inherit" onClick={handleSignUp}>
-                회원가입
-              </Button>
-            </div>
-          )}
-        </Toolbar>
-      </AppBar>
-
-      {/* 탭 버튼 */}
-      <Box sx={{ padding: "1rem", display: "flex", gap: "1rem" }}>
-        <Button
-          variant={activeTab === "chart" ? "contained" : "outlined"}
-          onClick={() => handleTabChange("chart")}
-        >
-          📈 {t("chart")}
-        </Button>
-        <Button
-          variant={activeTab === "news" ? "contained" : "outlined"}
-          onClick={() => handleTabChange("news")}
-        >
-          📰 {t("news")}
-        </Button>
-        <Button
-          variant={activeTab === "fortune" ? "contained" : "outlined"}
-          onClick={() => handleTabChange("fortune")}
-        >
-          🔮 {t("fortune")}
-        </Button>
-        <Button
-          variant={activeTab === "inquiry" ? "contained" : "outlined"}
-          onClick={() => handleTabChange("inquiry")}
-        >
-          📩 {t("inquiry")}
-        </Button>
-        <Button
-          variant={activeTab === "exchangeInfo" ? "contained" : "outlined"}
-          onClick={() => handleTabChange("exchangeInfo")}
-        >
-          🏦 {t("exchangeInfo")}
-        </Button>
-      </Box>
-
-      {/* 로딩 또는 탭 컨텐츠 */}
-      {loading ? (
-        <Typography sx={{ textAlign: "center", marginTop: "20px" }}>
-          ⏳ Loading...
-        </Typography>
-      ) : (
-        <Box
-          component={motion.div}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          sx={{ padding: "1rem" }}
-        >
-          {activeTab === "chart" && <ChartSection />}
-          {activeTab === "news" && <NewsSection />}
-          {activeTab === "fortune" && <FortuneSection />}
-          {activeTab === "inquiry" && <InquirySection />}
-          {activeTab === "exchangeInfo" && <ExchangeInfoSection />}
+            📈 {t("chart")}
+          </Button>
+          <Button
+            variant={activeTab === "news" ? "contained" : "outlined"}
+            onClick={() => handleTabChange("news")}
+          >
+            📰 {t("news")}
+          </Button>
+          <Button
+            variant={activeTab === "fortune" ? "contained" : "outlined"}
+            onClick={() => handleTabChange("fortune")}
+          >
+            🔮 {t("fortune")}
+          </Button>
+          <Button
+            variant={activeTab === "inquiry" ? "contained" : "outlined"}
+            onClick={() => handleTabChange("inquiry")}
+          >
+            📩 {t("inquiry")}
+          </Button>
+          <Button
+            variant={activeTab === "exchangeInfo" ? "contained" : "outlined"}
+            onClick={() => handleTabChange("exchangeInfo")}
+          >
+            🏦 {t("exchangeInfo")}
+          </Button>
         </Box>
-      )}
-    </Box>
+
+        {loading ? (
+          <Typography sx={{ textAlign: "center", marginTop: "20px" }}>
+            ⏳ Loading...
+          </Typography>
+        ) : (
+          <Box
+            component={motion.div}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            sx={{ padding: "1rem" }}
+          >
+            {activeTab === "chart" && <ChartSection />}
+            {activeTab === "news" && <NewsSection />}
+            {activeTab === "fortune" && <FortuneSection />}
+            {activeTab === "inquiry" && <InquirySection />}
+            {activeTab === "exchangeInfo" && <ExchangeInfoSection />}
+          </Box>
+        )}
+      </Box>
+    </ThemeProvider>
   );
 }
 
