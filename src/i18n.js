@@ -33,7 +33,7 @@ const resources = {
       darkMode: "다크모드",
       lightMode: "라이트모드",
       searchPlaceholder: "검색어",
-      exchangeInfo: "거래서 정보",
+      exchangeInfo: "거래소 정보",
       search: "검색",
 
       momentNow: "지금 이순간", 
