@@ -10,7 +10,6 @@ import {
   Select,
   MenuItem,
   Box,
-  Grid,
   Divider
 } from "@mui/material";
 import ReactECharts from "echarts-for-react";
@@ -29,6 +28,9 @@ function ChartSection() {
     { symbol: "ETH", name: "이더리움" },
     { symbol: "BCH", name: "비트코인 캐시" },
     { symbol: "SOL", name: "솔라나" },
+    { symbol: "NEO", name: "네오" },
+    { symbol: "TRUMP", name: "트럼프" },
+    { symbol: "STRIKE", name: "스트라이크" },
     { symbol: "ENS", name: "이더리움 네임 서비스" },
     { symbol: "ETC", name: "이더리움 클래식" },
     { symbol: "XRP", name: "리플" }
@@ -53,7 +55,8 @@ function ChartSection() {
 
   const fetchTrendData = useCallback(async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/coin_trend?market=KRW-${coinSymbol}`);
+      const market = `KRW-${coinSymbol.toUpperCase()}`;
+      const response = await fetch(`http://localhost:5000/api/coin_trend?market=${market}`);
       const data = await response.json();
       setTrendData(data);
     } catch (error) {
@@ -61,17 +64,28 @@ function ChartSection() {
     }
   }, [coinSymbol]);
 
-  useEffect(() => {
+  // 업데이트 버튼에서 두 API를 함께 호출하도록 함수를 정의합니다.
+  const updateAll = useCallback(() => {
     fetchData();
     fetchTrendData();
   }, [fetchData, fetchTrendData]);
+
+  useEffect(() => {
+    updateAll();
+  }, [updateAll]);
+
+  // coins 배열에서 선택된 코인의 정보를 찾아 제목에 포함합니다.
+  const selectedCoin = coins.find(coin => coin.symbol === coinSymbol);
+  const title = selectedCoin
+    ? `${selectedCoin.symbol} (${selectedCoin.name}) 상승/하락 확률`
+    : `${coinSymbol} 상승/하락 확률`;
 
   return (
     <Card sx={{ marginBottom: "20px" }}>
       <CardContent>
         {/* 📊 상승/하락 확률 차트 (맨 위) */}
         <Typography variant="h5" align="center" sx={{ fontWeight: "bold", marginBottom: "10px" }}>
-          {coinSymbol.toUpperCase()} 상승/하락 확률
+          {title}
         </Typography>
         <ReactECharts
           option={{
@@ -126,7 +140,7 @@ function ChartSection() {
               일봉
             </Button>
           </ButtonGroup>
-          <Button variant="contained" onClick={fetchData}>
+          <Button variant="contained" onClick={updateAll}>
             🔄 업데이트
           </Button>
         </Box>
