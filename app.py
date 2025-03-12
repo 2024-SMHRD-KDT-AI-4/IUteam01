@@ -324,29 +324,27 @@ def bitcoin_data():
     data = response.json()
     data.reverse()
 
-    # DataFrame 생성 및 필요한 컬럼 선택
-    df = pd.DataFrame(data)
-    df = df[['candle_date_time_kst', 'opening_price', 'high_price', 'low_price', 'trade_price', 'candle_acc_trade_volume']]
-    df = df[::-1].reset_index(drop=True)
-    # RSI, MACD 등 지표 계산
-    df = calculate_indicators(df)
+    # trade_price 리스트를 통해 RSI, MACD, Signal 계산
+    prices = [item["trade_price"] for item in data]
+    rsi_values = compute_rsi(prices, period=14)
+    macd_values, signal_values = compute_macd(prices, short_period=12, long_period=26, signal_period=9)
 
     transformed_data = []
-    for idx, row in df.iterrows():
+    for idx, item in enumerate(data):
         transformed_data.append({
-            "date": row["candle_date_time_kst"],
-            "opening_price": row["opening_price"],
-            "high_price": row["high_price"],
-            "low_price": row["low_price"],
-            "trade_price": row["trade_price"],
-            "candle_acc_trade_volume": row["candle_acc_trade_volume"],
-            "RSI": row["RSI"],
-            "MACD": row["MACD"],
-            # Signal 값은 필요에 따라 변경 (여기서는 MACD_Change 예시)
-            "Signal": row["MACD_Change"]
+            "date": item["candle_date_time_kst"],
+            "open": item["opening_price"],
+            "high": item["high_price"],
+            "low": item["low_price"],
+            "close": item["trade_price"],
+            "candle_acc_trade_volume": item["candle_acc_trade_volume"],
+            "rsi": rsi_values[idx] if idx < len(rsi_values) else None,
+            "macd": macd_values[idx] if idx < len(macd_values) else None,
+            "signal": signal_values[idx] if idx < len(signal_values) else None
         })
 
     return jsonify(transformed_data)
+
 
 
 ############################################
