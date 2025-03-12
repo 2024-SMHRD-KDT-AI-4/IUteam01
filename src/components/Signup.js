@@ -89,6 +89,9 @@ const Signup = () => {
     <div className="signup-container">
       <h2>회원가입</h2>
       <form>
+        <button type="button" >
+          신분증 인증하기
+        </button>
         <label>아이디</label>
         <input
           type="text"

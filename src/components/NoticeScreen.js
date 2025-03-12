@@ -23,7 +23,14 @@ function NoticeScreen({ onContinue }) {
     // 필요 시 상위 컴포넌트의 onContinue 콜백 호출
     if (onContinue) onContinue();
     // 그리고 "/" 경로로 이동하여 대시보드 표시
-    navigate("/");
+    navigate("/login");
+  };
+
+  const handleButtonClick2 = () => {
+    // 필요 시 상위 컴포넌트의 onContinue 콜백 호출
+    if (onContinue) onContinue();
+    // 그리고 "/" 경로로 이동하여 대시보드 표시
+    navigate("/signup");
   };
 
   return (
@@ -121,7 +128,17 @@ function NoticeScreen({ onContinue }) {
               onClick={handleButtonClick}
               sx={{ fontWeight: "bold" }}
             >
-              [동의하고 계속하기] / [I Agree and Continue]
+              [동의하고 로그인] / [I Agree and Continue]
+            </Button>
+          </Box>
+          <Box textAlign="center" mt={2}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleButtonClick2}
+              sx={{ fontWeight: "bold" }}
+            >
+              [동의하고 회원가입] / [I Agree and Continue]
             </Button>
           </Box>
         </CardContent>
