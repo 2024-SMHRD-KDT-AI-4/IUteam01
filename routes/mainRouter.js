@@ -136,10 +136,15 @@ router.post("/inquiry", upload.single("file"), (req, res) => {
 });
 
 // ============================================
-// 문의(질문) 목록 조회 API
+// 문의(질문) 목록 조회 API (작성자 닉네임 포함)
 // ============================================
 router.get("/inquiries", (req, res) => {
-  const sql = "SELECT * FROM QUESTION_INFO ORDER BY CREATED_AT DESC";
+  const sql = `
+    SELECT Q.*, U.USER_NICK
+    FROM QUESTION_INFO Q
+    JOIN USER_INFO U ON Q.USER_ID = U.USER_ID
+    ORDER BY Q.CREATED_AT DESC
+  `;
   conn.query(sql, (err, rows) => {
     if (err) {
       console.error("문의 목록 불러오기 오류:", err);
@@ -160,7 +165,12 @@ router.get("/inquiry/:id", (req, res) => {
       console.error("조회수 증가 오류:", err);
       return res.status(500).json({ error: "조회수 증가 실패" });
     }
-    const selectSql = "SELECT * FROM QUESTION_INFO WHERE QUES_IDX = ?";
+    const selectSql = `
+      SELECT Q.*, U.USER_NICK
+      FROM QUESTION_INFO Q
+      JOIN USER_INFO U ON Q.USER_ID = U.USER_ID
+      WHERE QUES_IDX = ?
+    `;
     conn.query(selectSql, [id], (err, rows) => {
       if (err) {
         console.error("문의 상세 조회 오류:", err);

@@ -132,7 +132,7 @@ function InquirySection() {
                       {inquiry.QUES_CONTENT}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      조회수: {inquiry.QUES_VIEWS} | 등록일:{" "}
+                      작성자: {inquiry.USER_NICK} | 조회수: {inquiry.QUES_VIEWS} | 등록일:{" "}
                       {new Date(inquiry.CREATED_AT).toLocaleString()}
                     </Typography>
                   </CardContent>
