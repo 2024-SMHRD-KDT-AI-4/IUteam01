@@ -28,6 +28,9 @@ function ChartSection() {
     { symbol: "ETH", name: "이더리움" },
     { symbol: "BCH", name: "비트코인 캐시" },
     { symbol: "SOL", name: "솔라나" },
+    { symbol: "NEO", name: "네오" },
+    { symbol: "TRUMP", name: "트럼프" },
+    { symbol: "STRIKE", name: "스트라이크" },
     { symbol: "ENS", name: "이더리움 네임 서비스" },
     { symbol: "ETC", name: "이더리움 클래식" },
     { symbol: "XRP", name: "리플" }
