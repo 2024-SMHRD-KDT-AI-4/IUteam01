@@ -11,7 +11,43 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 ############################################
-# 전역 변수 및 설정
+# Utility Functions: EMA, RSI, MACD 계산
+############################################
+
+def ema(prices, period):
+    k = 2 / (period + 1)
+    ema_values = [prices[0]]
+    for price in prices[1:]:
+        ema_values.append(price * k + ema_values[-1] * (1 - k))
+    return ema_values
+
+def compute_rsi(prices, period=14):
+    if len(prices) < period:
+        return [None] * len(prices)
+    rsi = [None] * len(prices)
+    changes = [prices[i] - prices[i - 1] for i in range(1, len(prices))]
+    gains = [max(change, 0) for change in changes]
+    losses = [abs(min(change, 0)) for change in changes]
+    avg_gain = sum(gains[:period]) / period
+    avg_loss = sum(losses[:period]) / period
+    rsi[period] = 100 - (100 / (1 + (avg_gain / avg_loss))) if avg_loss != 0 else 100
+    for i in range(period + 1, len(prices)):
+        gain = gains[i - 1]
+        loss = losses[i - 1]
+        avg_gain = (avg_gain * (period - 1) + gain) / period
+        avg_loss = (avg_loss * (period - 1) + loss) / period
+        rsi[i] = 100 - (100 / (1 + (avg_gain / avg_loss))) if avg_loss != 0 else 100
+    return rsi
+
+def compute_macd(prices, short_period=12, long_period=26, signal_period=9):
+    ema_short = ema(prices, short_period)
+    ema_long = ema(prices, long_period)
+    macd_line = [s - l for s, l in zip(ema_short, ema_long)]
+    signal_line = ema(macd_line, signal_period)
+    return macd_line, signal_line
+
+############################################
+# Global Variables and Settings
 ############################################
 
 # 10개 코인 리스트
@@ -36,7 +72,7 @@ selected_features_down = [
 ALL_FEATURES = list(set(selected_features_up + selected_features_down))
 
 ############################################
-# 모델 로드 함수 (동적)
+# Model Loading Function (Dynamic)
 ############################################
 
 def load_models_for_all_coins():
@@ -55,7 +91,7 @@ def load_models_for_all_coins():
 load_models_for_all_coins()
 
 ############################################
-# 데이터 수집 및 지표 계산 (공통 함수)
+# Data Collection and Indicator Calculation (Common)
 ############################################
 
 def get_upbit_data(market, count=100):
@@ -98,7 +134,7 @@ def calculate_indicators(df):
     return df.dropna()
 
 ############################################
-# 예측 함수: 각 코인별 예측 실행 및 CSV 저장, 결과 업데이트
+# Prediction Function: For each coin, predict, save CSV, update result
 ############################################
 
 def predict_and_evaluate_for_coin(coin):
@@ -116,7 +152,7 @@ def predict_and_evaluate_for_coin(coin):
         print(f"❌ [{coin}] 모델을 찾을 수 없습니다.")
         return
 
-    # Feature 추출 및 스케일링
+    # Extract features and scale them
     X_new_up = df_new[selected_features_up].iloc[-1:]
     X_new_down = df_new[selected_features_down].iloc[-1:]
     X_new_up_scaled = models["scaler_up"].transform(X_new_up)
@@ -137,7 +173,7 @@ def predict_and_evaluate_for_coin(coin):
     print(f"💰 현재 가격: {current_price}")
     print(f"📢 최종 예측: {predicted_direction} (상승 {xgb_up_prob}%, 하락 {xgb_down_prob}%)")
 
-    # 중간 결과 업데이트 (우선 CSV에 저장 전, 기본 결과 저장)
+    # Update latest prediction for the coin
     latest_prediction[coin] = {
         "prediction_time": prediction_time,
         "current_price": current_price,
@@ -150,7 +186,7 @@ def predict_and_evaluate_for_coin(coin):
         "result": None
     }
 
-    # CSV 저장: 각 코인별 CSV 파일에 결과 저장 (append 모드)
+    # Save to coin-specific CSV file
     csv_file = f"prediction_results_{coin}.csv"
     row_data = df_new.iloc[-1][ALL_FEATURES].to_dict()
     row_data.update({
@@ -169,7 +205,7 @@ def predict_and_evaluate_for_coin(coin):
     df_to_save.to_csv(csv_file, mode='a', header=not is_file_exist, index=False)
     print(f"✅ [{coin}] CSV 저장 완료: {csv_file}")
 
-    # 5분 대기 후 실제 가격 확인 및 최종 결과 업데이트
+    # Wait 5 minutes, then verify prediction with future price
     print(f"\n⌛ [{coin}] 5분 후 실제 가격 확인 대기...")
     time.sleep(300)
     df_future = get_upbit_data(market)
@@ -188,7 +224,7 @@ def predict_and_evaluate_for_coin(coin):
         "result": result
     })
 
-    # CSV 업데이트: 재저장(최종 결과 append)
+    # Append final results to CSV file
     row_data.update({
         "future_time": future_time,
         "future_price": future_price,
@@ -200,7 +236,7 @@ def predict_and_evaluate_for_coin(coin):
     print(f"✅ [{coin}] 최종 CSV 업데이트 완료: {csv_file}")
 
 ############################################
-# 재학습 함수: 각 코인별 CSV 파일로 재학습 진행
+# Retraining Function: Retrain model using coin-specific CSV file
 ############################################
 
 def retrain_model_for_coin(coin):
@@ -211,11 +247,10 @@ def retrain_model_for_coin(coin):
         return
 
     df = pd.read_csv(csv_file)
-    # 라벨 생성
+    # Create labels: 1 if future_price > current_price, else 0
     df['label_up'] = (df['future_price'] > df['current_price']).astype(int)
     df['label_down'] = (df['future_price'] < df['current_price']).astype(int)
-    
-    # feature 선택
+
     X_up = df[selected_features_up].copy()
     y_up = df['label_up'].copy()
     X_down = df[selected_features_down].copy()
@@ -240,13 +275,13 @@ def retrain_model_for_coin(coin):
     new_xgb_down = XGBClassifier(n_estimators=500, learning_rate=0.05, max_depth=5, random_state=42)
     new_xgb_down.fit(X_down_scaled, y_down)
 
-    # 모델 파일 덮어쓰기
+    # Overwrite model files
     joblib.dump(new_xgb_up, f"xgb_up_{coin}.pkl")
     joblib.dump(new_scaler_up, f"scaler_up_{coin}.pkl")
     joblib.dump(new_xgb_down, f"xgb_down_{coin}.pkl")
     joblib.dump(new_scaler_down, f"scaler_down_{coin}.pkl")
 
-    # 메모리 업데이트
+    # Update in-memory models
     models_dict[coin]["xgb_up"] = new_xgb_up
     models_dict[coin]["scaler_up"] = new_scaler_up
     models_dict[coin]["xgb_down"] = new_xgb_down
@@ -254,7 +289,7 @@ def retrain_model_for_coin(coin):
     print(f"✅ [{coin}] 재학습 완료 및 모델 업데이트")
 
 ############################################
-# 각 코인별 예측 루프 실행 함수 (멀티스레딩)
+# Run prediction loop for each coin (Multi-threading)
 ############################################
 
 def run_forever_for_coin(coin):
@@ -263,7 +298,7 @@ def run_forever_for_coin(coin):
         try:
             print(f"\n⏳ [{coin}] {i}번째 예측 실행 중...")
             predict_and_evaluate_for_coin(coin)
-            # 예를 들어 288회마다 재학습 (약 24시간 주기)
+            # Retrain every 288 predictions (approximately 24 hours)
             if i % 288 == 0:
                 print(f"\n🚀 [{coin}] 288회 예측 완료 - 재학습 진행!")
                 retrain_model_for_coin(coin)
@@ -273,7 +308,7 @@ def run_forever_for_coin(coin):
             time.sleep(10)
 
 ############################################
-# Flask API 관련 코드
+# Flask API Section
 ############################################
 
 app = Flask(__name__)
@@ -281,7 +316,7 @@ CORS(app)
 
 @app.route("/api/prediction_result")
 def prediction_result():
-    # 요청 파라미터에서 market을 받아 코인 심볼 추출 (예: "KRW-BTC" -> "BTC")
+    # Get coin symbol from market parameter (e.g., "KRW-BTC" -> "BTC")
     market = request.args.get("market", "KRW-BTC")
     coin = market.split("-")[-1]
     if coin not in latest_prediction or latest_prediction[coin] is None:
@@ -324,7 +359,7 @@ def bitcoin_data():
     data = response.json()
     data.reverse()
 
-    # trade_price 리스트를 통해 RSI, MACD, Signal 계산
+    # Calculate indicators: RSI, MACD, Signal
     prices = [item["trade_price"] for item in data]
     rsi_values = compute_rsi(prices, period=14)
     macd_values, signal_values = compute_macd(prices, short_period=12, long_period=26, signal_period=9)
@@ -345,16 +380,14 @@ def bitcoin_data():
 
     return jsonify(transformed_data)
 
-
-
 ############################################
-# 메인 실행: 각 코인별 예측 스레드와 Flask 서버 실행
+# Main Execution: Start prediction threads for each coin and run Flask server
 ############################################
 
 if __name__ == "__main__":
-    # 각 코인에 대해 별도의 스레드를 생성하여 예측 작업 실행
+    # Start a thread for each coin's prediction loop
     for coin in coins_list:
         thread = threading.Thread(target=run_forever_for_coin, args=(coin,), daemon=True)
         thread.start()
-    # 메인 스레드에서 Flask API 서버 실행
+    # Run Flask API server
     app.run(debug=True, use_reloader=False)
