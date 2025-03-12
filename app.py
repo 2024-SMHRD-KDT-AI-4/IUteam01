@@ -152,7 +152,7 @@ def predict_and_evaluate_for_coin(coin):
         print(f"❌ [{coin}] 모델을 찾을 수 없습니다.")
         return
 
-    # Extract features and scale them
+    # Feature 추출 및 스케일링
     X_new_up = df_new[selected_features_up].iloc[-1:]
     X_new_down = df_new[selected_features_down].iloc[-1:]
     X_new_up_scaled = models["scaler_up"].transform(X_new_up)
@@ -173,7 +173,7 @@ def predict_and_evaluate_for_coin(coin):
     print(f"💰 현재 가격: {current_price}")
     print(f"📢 최종 예측: {predicted_direction} (상승 {xgb_up_prob}%, 하락 {xgb_down_prob}%)")
 
-    # Update latest prediction for the coin
+    # 중간 결과 업데이트 (메모리만 업데이트)
     latest_prediction[coin] = {
         "prediction_time": prediction_time,
         "current_price": current_price,
@@ -186,26 +186,7 @@ def predict_and_evaluate_for_coin(coin):
         "result": None
     }
 
-    # Save to coin-specific CSV file
-    csv_file = f"prediction_results_{coin}.csv"
-    row_data = df_new.iloc[-1][ALL_FEATURES].to_dict()
-    row_data.update({
-        "prediction_time": prediction_time,
-        "current_price": current_price,
-        "future_time": None,
-        "future_price": None,
-        "predicted_dir": predicted_direction,
-        "actual_dir": None,
-        "xgb_up_prob": xgb_up_prob,
-        "xgb_down_prob": xgb_down_prob,
-        "result": None
-    })
-    df_to_save = pd.DataFrame([row_data])
-    is_file_exist = os.path.isfile(csv_file)
-    df_to_save.to_csv(csv_file, mode='a', header=not is_file_exist, index=False)
-    print(f"✅ [{coin}] CSV 저장 완료: {csv_file}")
-
-    # Wait 5 minutes, then verify prediction with future price
+    # 5분 대기 후 실제 가격 확인 및 최종 결과 업데이트
     print(f"\n⌛ [{coin}] 5분 후 실제 가격 확인 대기...")
     time.sleep(300)
     df_future = get_upbit_data(market)
@@ -217,6 +198,7 @@ def predict_and_evaluate_for_coin(coin):
     print(f"📅 실제 확인 시간: {future_time}")
     print(f"💰 5분 후 실제 가격: {future_price}")
     print(f"📢 예측 결과: {predicted_direction} → {result}")
+
     latest_prediction[coin].update({
         "future_time": future_time,
         "future_price": future_price,
@@ -224,16 +206,25 @@ def predict_and_evaluate_for_coin(coin):
         "result": result
     })
 
-    # Append final results to CSV file
+    # 최종 결과만 CSV에 저장
+    csv_file = f"prediction_results_{coin}.csv"
+    row_data = df_new.iloc[-1][ALL_FEATURES].to_dict()
     row_data.update({
+        "prediction_time": prediction_time,
+        "current_price": current_price,
         "future_time": future_time,
         "future_price": future_price,
+        "predicted_dir": predicted_direction,
         "actual_dir": actual_direction,
+        "xgb_up_prob": xgb_up_prob,
+        "xgb_down_prob": xgb_down_prob,
         "result": result
     })
     df_to_save = pd.DataFrame([row_data])
-    df_to_save.to_csv(csv_file, mode='a', header=False, index=False)
-    print(f"✅ [{coin}] 최종 CSV 업데이트 완료: {csv_file}")
+    is_file_exist = os.path.isfile(csv_file)
+    df_to_save.to_csv(csv_file, mode='a', header=not is_file_exist, index=False)
+    print(f"✅ [{coin}] 최종 CSV 저장 완료: {csv_file}")
+
 
 ############################################
 # Retraining Function: Retrain model using coin-specific CSV file
@@ -299,7 +290,7 @@ def run_forever_for_coin(coin):
             print(f"\n⏳ [{coin}] {i}번째 예측 실행 중...")
             predict_and_evaluate_for_coin(coin)
             # Retrain every 288 predictions (approximately 24 hours)
-            if i % 288 == 0:
+            if i % 12 == 0:
                 print(f"\n🚀 [{coin}] 288회 예측 완료 - 재학습 진행!")
                 retrain_model_for_coin(coin)
             i += 1
