@@ -233,7 +233,7 @@ function Dashboard({ darkMode, setDarkMode }) {
             variant={activeTab === "inquiry" ? "contained" : "outlined"}
             onClick={() => handleTabChange("inquiry")}
           >
-            📩 {t("inquiry")}
+            📩 {t("community")}
           </Button>
           <Button
             variant={activeTab === "exchangeInfo" ? "contained" : "outlined"}
