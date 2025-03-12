@@ -1,0 +1,2 @@
+MACD_Change_3,Stochastic,Sudden_Price_Drop,Strong_Peak_Signal,Failed_10EMA_Breakout,6EMA,MACD,10EMA,Peak_Signal,Price_Change_1,Price_Change_3,MACD_Change,RSI_Change,RSI_Change_3,Rebound_Signal,3EMA,prediction_time,current_price,future_time,future_price,predicted_dir,actual_dir,xgb_up_prob,xgb_down_prob,result
+669.854648692999,8.333333333333332,0,0,1,2806898.2596001155,-4932.443872414064,2813854.246944224,0,0.0,-0.003558718861209953,793.4881123453379,0.0,-16.666666666666657,0,2801965.8157277014,2025-03-12T18:25:00,2800000.0,,,하락 📉,,39,61,
