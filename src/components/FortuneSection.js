@@ -68,7 +68,7 @@ function FortuneSection() {
 
   return (
     <div className="fortune-container">
-      <h2>🔮 {t("Choose a Stock Fortune Card")}</h2>
+      <h2>🔮 {t("choose")}</h2>
       <div className="card-container">
         {[...Array(9)].map((_, index) => (
           <div

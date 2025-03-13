@@ -18,7 +18,8 @@ const resources = {
       searchPlaceholder: "Search...",
       search: "SEARCH",
       momentNow: "This is the moment", 
-      exchangeInfo: "Exchange Info"
+      exchangeInfo: "Exchange Info",
+      choose: "Choose a Stock Fortune Card!"
     },
   },
   ko: {
@@ -35,7 +36,7 @@ const resources = {
       searchPlaceholder: "검색어",
       exchangeInfo: "거래소 정보",
       search: "검색",
-
+      choose: "오늘의 주식 운명을 점쳐볼 카드 한 장을 선택하세요!",
       momentNow: "지금 이순간", 
     },
   },

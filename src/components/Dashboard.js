@@ -190,7 +190,7 @@ function Dashboard({ darkMode, setDarkMode }) {
             </Select>
             {window.localStorage.getItem("nick") ? (
               <div>
-                <Typography variant="h6">
+                <Typography variant="h6" align="center">
                   {window.localStorage.getItem("nick")}님 환영합니다
                 </Typography>
                 <Button color="inherit" onClick={handleLogout}>
