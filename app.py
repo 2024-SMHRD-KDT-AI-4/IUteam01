@@ -290,7 +290,7 @@ def run_forever_for_coin(coin):
             print(f"\n⏳ [{coin}] {i}번째 예측 실행 중...")
             predict_and_evaluate_for_coin(coin)
             # Retrain every 288 predictions (approximately 24 hours)
-            if i % 12 == 0:
+            if i % 288 == 0:
                 print(f"\n🚀 [{coin}] 288회 예측 완료 - 재학습 진행!")
                 retrain_model_for_coin(coin)
             i += 1
