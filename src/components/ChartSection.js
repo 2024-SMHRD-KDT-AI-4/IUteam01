@@ -135,10 +135,10 @@ function ChartSection() {
         <Box sx={{ display: "flex", justifyContent: "center", gap: 2, marginBottom: 2 }}>
           <ButtonGroup>
             <Button variant={dataType === "5min" ? "contained" : "outlined"} onClick={() => setDataType("5min")}>
-              5분봉
+              5분단위
             </Button>
             <Button variant={dataType === "daily" ? "contained" : "outlined"} onClick={() => setDataType("daily")}>
-              일봉
+              1일단위
             </Button>
           </ButtonGroup>
           <Button variant="contained" onClick={updateAll}>
