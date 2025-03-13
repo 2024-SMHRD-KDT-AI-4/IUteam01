@@ -66,6 +66,12 @@ function FortuneSection() {
     setTimeout(() => setCardFortunes(updatedCardFortunes), 500);
   };
 
+  const handleReset = () => {
+    setSelectedCards(Array(9).fill(null));
+    setCardFortunes(Array(9).fill(""));
+    setAvailableFortunes([...fortunes]);
+  };
+
   return (
     <div className="fortune-container">
       <h2>🔮 {t("choose")}</h2>
@@ -83,6 +89,11 @@ function FortuneSection() {
           </div>
         ))}
       </div>
+      {selectedCards.every((card) => card !== null) && (
+        <button className="reset-button" onClick={handleReset}>
+          🔄 다시하기
+        </button>
+      )}
     </div>
   );
 }
