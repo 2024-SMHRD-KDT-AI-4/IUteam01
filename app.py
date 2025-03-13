@@ -329,28 +329,39 @@ def coin_trend():
 def bitcoin_data():
     type_param = request.args.get("type", "5min")
     market = request.args.get("market", "KRW-BTC")
+    # 선택적 'to' 파라미터 (예: '2024-10-01 00:00:00')
+    to_param = request.args.get("to", None)
+    
+    # type_param에 따라 적절한 API 엔드포인트 설정
     if type_param == "5min":
+        # 예제에서는 1분봉을 요청 (원하는 경우 minutes/5로 변경 가능)
         url = "https://api.upbit.com/v1/candles/minutes/5"
     elif type_param == "daily":
         url = "https://api.upbit.com/v1/candles/days"
     else:
         return jsonify({"error": "Invalid type parameter. Use '5min' or 'daily'."}), 400
 
+    # count 파라미터 처리
     count = request.args.get("count", 200)
     try:
         count = int(count)
     except ValueError:
         count = 200
 
+    # API 요청 파라미터 구성
     params = {"market": market, "count": count}
-    response = requests.get(url, params=params)
+    if to_param:
+        params["to"] = to_param
+
+    headers = {"accept": "application/json"}
+    response = requests.get(url, params=params, headers=headers)
     if response.status_code != 200:
         return jsonify({"error": "Failed to retrieve data from Upbit API"}), 500
 
     data = response.json()
     data.reverse()
 
-    # Calculate indicators: RSI, MACD, Signal
+    # trade_price 리스트를 통해 RSI, MACD, Signal 계산
     prices = [item["trade_price"] for item in data]
     rsi_values = compute_rsi(prices, period=14)
     macd_values, signal_values = compute_macd(prices, short_period=12, long_period=26, signal_period=9)
@@ -370,6 +381,7 @@ def bitcoin_data():
         })
 
     return jsonify(transformed_data)
+
 
 ############################################
 # Main Execution: Start prediction threads for each coin and run Flask server
