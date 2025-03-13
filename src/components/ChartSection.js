@@ -16,7 +16,7 @@ import ReactECharts from "echarts-for-react";
 
 function ChartSection() {
   const [dataType, setDataType] = useState("5min");
-  const [chartData, setChartData] = useState([]);
+  const [chartData, setChartData] = useState([]); // 캔들차트: [date, open, close, low, high]
   const [rsiData, setRsiData] = useState([]);
   const [macdData, setMacdData] = useState([]);
   const [trendData, setTrendData] = useState({ up_prob: 50, down_prob: 50 });
@@ -43,8 +43,11 @@ function ChartSection() {
       const response = await fetch(`http://localhost:5000/api/bitcoin_data?type=${dataType}&market=${market}`);
       const data = await response.json();
 
-      setChartData(data.map(item => [item.date, item.price]));
+      // 캔들차트 데이터: [date, open, close, low, high]
+      setChartData(data.map(item => [item.date, item.open, item.close, item.low, item.high]));
+      // RSI 데이터: [date, rsi]
       setRsiData(data.map(item => [item.date, item.rsi]));
+      // MACD 데이터: [date, macd, signal]
       setMacdData(data.map(item => [item.date, item.macd, item.signal]));
       setLoading(false);
     } catch (error) {
@@ -64,7 +67,6 @@ function ChartSection() {
     }
   }, [coinSymbol]);
 
-  // 업데이트 버튼에서 두 API를 함께 호출하도록 함수를 정의합니다.
   const updateAll = useCallback(() => {
     fetchData();
     fetchTrendData();
@@ -74,7 +76,6 @@ function ChartSection() {
     updateAll();
   }, [updateAll]);
 
-  // coins 배열에서 선택된 코인의 정보를 찾아 제목에 포함합니다.
   const selectedCoin = coins.find(coin => coin.symbol === coinSymbol);
   const title = selectedCoin
     ? `${selectedCoin.symbol} (${selectedCoin.name}) 상승/하락 확률`
@@ -83,7 +84,7 @@ function ChartSection() {
   return (
     <Card sx={{ marginBottom: "20px" }}>
       <CardContent>
-        {/* 📊 상승/하락 확률 차트 (맨 위) */}
+        {/* 상승/하락 확률 파이 차트 */}
         <Typography variant="h5" align="center" sx={{ fontWeight: "bold", marginBottom: "10px" }}>
           {title}
         </Typography>
@@ -110,9 +111,9 @@ function ChartSection() {
 
         <Divider sx={{ margin: "20px 0" }} />
 
-        {/* 📈 가격, RSI, MACD 차트 (아래 정렬) */}
+        {/* 캔들차트 */}
         <Typography variant="h5" align="center" sx={{ fontWeight: "bold", marginBottom: "10px" }}>
-          {coinSymbol.toUpperCase()} {dataType === "5min" ? "5분봉 차트" : "일봉 차트"}
+          {coinSymbol.toUpperCase()} {dataType === "5min" ? "5분봉 캔들차트" : "일봉 캔들차트"}
         </Typography>
 
         <FormControl fullWidth sx={{ marginBottom: "1rem" }}>
@@ -152,18 +153,53 @@ function ChartSection() {
             {chartData.length > 0 && (
               <ReactECharts
                 option={{
-                  title: { text: "📈 코인 가격 변동", left: "center" },
-                  tooltip: { trigger: "axis" },
-                  xAxis: { type: "category", data: chartData.map(item => item[0]) },
-                  yAxis: { type: "value", name: "가격" },
-                  series: [{ data: chartData.map(item => item[1]), type: "line", smooth: true }]
+                  title: { text: "📈 캔들차트", left: "center" },
+                  tooltip: {
+                    trigger: "axis",
+                    formatter: function (params) {
+                      const item = params[0];
+                      return [
+                        "날짜: " + item.axisValue,
+                        "시가: " + item.data[1],
+                        "종가: " + item.data[2],
+                        "최저가: " + item.data[3],
+                        "최고가: " + item.data[4]
+                      ].join("<br/>");
+                    }
+                  },
+                  xAxis: {
+                    type: "category",
+                    data: chartData.map(item => item[0]),
+                    scale: true,
+                    boundaryGap: false,
+                    axisLine: { onZero: false },
+                    splitLine: { show: false },
+                    splitNumber: 20,
+                    min: "dataMin",
+                    max: "dataMax"
+                  },
+                  yAxis: {
+                    scale: true,
+                    splitArea: { show: true }
+                  },
+                  series: [
+                    {
+                      name: "가격",
+                      type: "candlestick",
+                      data: chartData.map(item => [item[1], item[2], item[3], item[4]]),
+                      itemStyle: {
+                        color: "#06B800",
+                        color0: "#FA0000",
+                        borderColor: "#06B800",
+                        borderColor0: "#FA0000"
+                      }
+                    }
+                  ]
                 }}
                 style={{ height: "300px", width: "100%" }}
               />
             )}
-
             <Divider sx={{ margin: "10px 0" }} />
-
             {rsiData.length > 0 && (
               <ReactECharts
                 option={{
@@ -176,9 +212,7 @@ function ChartSection() {
                 style={{ height: "250px", width: "100%" }}
               />
             )}
-
             <Divider sx={{ margin: "10px 0" }} />
-
             {macdData.length > 0 && (
               <ReactECharts
                 option={{
