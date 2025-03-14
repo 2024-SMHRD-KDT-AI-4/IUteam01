@@ -5,13 +5,28 @@ import pandas as pd
 import numpy as np
 import joblib
 import requests
+import pymysql
 from xgboost import XGBClassifier
 from sklearn.preprocessing import StandardScaler
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 ############################################
-# Utility Functions: EMA, RSI, MACD 계산
+# 1) DB 연결 설정
+############################################
+
+connection = pymysql.connect(
+    host='project-db-cgi.smhrd.com',
+    port=3307,
+    user='cgi_24K_AI4_p2_2',
+    password='smhrd2',
+    db='cgi_24K_AI4_p2_2',
+    charset='utf8mb4',
+    cursorclass=pymysql.cursors.DictCursor
+)
+
+############################################
+# 2) 유틸 함수: EMA, RSI, MACD
 ############################################
 
 def ema(prices, period):
@@ -47,19 +62,13 @@ def compute_macd(prices, short_period=12, long_period=26, signal_period=9):
     return macd_line, signal_line
 
 ############################################
-# Global Variables and Settings
+# 3) 전역 설정
 ############################################
 
-# 10개 코인 리스트
 coins_list = ["BTC", "ETH", "BCH", "SOL", "NEO", "TRUMP", "STRIKE", "ENS", "ETC", "XRP"]
-
-# 코인별 최신 예측 결과 저장 (예: latest_prediction["BTC"] = { ... })
 latest_prediction = {}
-
-# 코인별 모델들을 저장할 딕셔너리 (동적 로드)
 models_dict = {}
 
-# 공통 Feature 목록 (모든 코인에 대해 동일하다고 가정)
 selected_features_up = [
     'Price_Change_1', 'Price_Change_3', 'MACD_Change', 'RSI_Change', 'RSI_Change_3',
     'Stochastic', 'Rebound_Signal', 'Peak_Signal', '3EMA', '10EMA', 'MACD'
@@ -72,7 +81,7 @@ selected_features_down = [
 ALL_FEATURES = list(set(selected_features_up + selected_features_down))
 
 ############################################
-# Model Loading Function (Dynamic)
+# 4) 모델 로드
 ############################################
 
 def load_models_for_all_coins():
@@ -91,7 +100,7 @@ def load_models_for_all_coins():
 load_models_for_all_coins()
 
 ############################################
-# Data Collection and Indicator Calculation (Common)
+# 5) 데이터 수집 & 지표 계산
 ############################################
 
 def get_upbit_data(market, count=100):
@@ -99,12 +108,12 @@ def get_upbit_data(market, count=100):
     response = requests.get(url)
     data = response.json()
     df = pd.DataFrame(data)
-    # 필요한 컬럼 선택 및 역순 정렬
-    df = df[['candle_date_time_kst', 'opening_price', 'high_price', 'low_price', 'trade_price', 'candle_acc_trade_volume']]
+    df = df[['candle_date_time_kst','opening_price','high_price','low_price','trade_price','candle_acc_trade_volume']]
     df = df[::-1].reset_index(drop=True)
     return df
 
 def calculate_indicators(df):
+    # 실제 계산 로직을 구현 (예시):
     df['Price_Change_1'] = df['trade_price'].pct_change(1)
     df['Price_Change_3'] = df['trade_price'].pct_change(3)
     df['3EMA'] = df['trade_price'].ewm(span=3, adjust=False).mean()
@@ -134,7 +143,30 @@ def calculate_indicators(df):
     return df.dropna()
 
 ############################################
-# Prediction Function: For each coin, predict, save CSV, update result
+# 6) DB Insert / Select 함수
+############################################
+
+def insert_prediction_result(coin, row_data):
+    table_name = f"prediction_results_{coin}"
+    columns = ", ".join(row_data.keys())
+    placeholders = ", ".join(["%s"] * len(row_data))
+    sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
+    
+    with connection.cursor() as cursor:
+        cursor.execute(sql, tuple(row_data.values()))
+    connection.commit()
+
+def get_training_data_from_db(coin):
+    table_name = f"prediction_results_{coin}"
+    sql = f"SELECT * FROM {table_name}"
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+    df = pd.DataFrame(rows)
+    return df
+
+############################################
+# 7) 예측 함수
 ############################################
 
 def predict_and_evaluate_for_coin(coin):
@@ -142,7 +174,9 @@ def predict_and_evaluate_for_coin(coin):
     market = f"KRW-{coin}"
     df_new = get_upbit_data(market)
     df_new = calculate_indicators(df_new)
-    df_new.dropna(inplace=True)
+    # 디버깅: 컬럼 확인
+    print(f"[{coin}] df_new columns:", df_new.columns.tolist())
+    df_new = df_new.dropna()
     if df_new.empty:
         print(f"❌ [{coin}] 데이터 부족/API 오류")
         return
@@ -173,7 +207,6 @@ def predict_and_evaluate_for_coin(coin):
     print(f"💰 현재 가격: {current_price}")
     print(f"📢 최종 예측: {predicted_direction} (상승 {xgb_up_prob}%, 하락 {xgb_down_prob}%)")
 
-    # 중간 결과 업데이트 (메모리만 업데이트)
     latest_prediction[coin] = {
         "prediction_time": prediction_time,
         "current_price": current_price,
@@ -186,7 +219,6 @@ def predict_and_evaluate_for_coin(coin):
         "result": None
     }
 
-    # 5분 대기 후 실제 가격 확인 및 최종 결과 업데이트
     print(f"\n⌛ [{coin}] 5분 후 실제 가격 확인 대기...")
     time.sleep(300)
     df_future = get_upbit_data(market)
@@ -194,6 +226,7 @@ def predict_and_evaluate_for_coin(coin):
     future_time = df_future['candle_date_time_kst'].iloc[-1]
     actual_direction = "상승 📈" if future_price > current_price else ("하락 📉" if future_price < current_price else "변동없음")
     result = "⭕ 정답" if predicted_direction == actual_direction else "❌ 오답"
+
     print(f"\n✅ [{coin}] 예측 검증 결과")
     print(f"📅 실제 확인 시간: {future_time}")
     print(f"💰 5분 후 실제 가격: {future_price}")
@@ -206,39 +239,38 @@ def predict_and_evaluate_for_coin(coin):
         "result": result
     })
 
-    # 최종 결과만 CSV에 저장
-    csv_file = f"prediction_results_{coin}.csv"
-    row_data = df_new.iloc[-1][ALL_FEATURES].to_dict()
-    row_data.update({
-        "prediction_time": prediction_time,
-        "current_price": current_price,
-        "future_time": future_time,
-        "future_price": future_price,
-        "predicted_dir": predicted_direction,
-        "actual_dir": actual_direction,
-        "xgb_up_prob": xgb_up_prob,
-        "xgb_down_prob": xgb_down_prob,
-        "result": result
-    })
-    df_to_save = pd.DataFrame([row_data])
-    is_file_exist = os.path.isfile(csv_file)
-    df_to_save.to_csv(csv_file, mode='a', header=not is_file_exist, index=False)
-    print(f"✅ [{coin}] 최종 CSV 저장 완료: {csv_file}")
-
+    # DB 저장을 위한 row_data 구성
+    row_data = {}
+    row_data["prediction_time"] = prediction_time
+    row_data["current_price"] = current_price
+    row_data["future_time"] = future_time
+    row_data["future_price"] = future_price
+    row_data["predicted_dir"] = predicted_direction
+    row_data["actual_dir"] = actual_direction
+    row_data["xgb_up_prob"] = xgb_up_prob
+    row_data["xgb_down_prob"] = xgb_down_prob
+    row_data["result"] = result
+    for feat in ALL_FEATURES:
+        row_data[feat] = df_new[feat].iloc[-1]
+    
+    insert_prediction_result(coin, row_data)
+    print(f"✅ [{coin}] 최종 DB 저장 완료!")
 
 ############################################
-# Retraining Function: Retrain model using coin-specific CSV file
+# 8) 재학습 함수
 ############################################
 
 def retrain_model_for_coin(coin):
     models = models_dict.get(coin)
-    csv_file = f"prediction_results_{coin}.csv"
-    if not os.path.exists(csv_file):
-        print(f"❌ [{coin}] 재학습 불가: CSV 파일이 없습니다.")
+    if models is None:
+        print(f"❌ [{coin}] 모델이 없습니다.")
         return
 
-    df = pd.read_csv(csv_file)
-    # Create labels: 1 if future_price > current_price, else 0
+    df = get_training_data_from_db(coin)
+    if df.empty:
+        print(f"❌ [{coin}] 재학습 불가: DB에 데이터가 없습니다.")
+        return
+
     df['label_up'] = (df['future_price'] > df['current_price']).astype(int)
     df['label_down'] = (df['future_price'] < df['current_price']).astype(int)
 
@@ -253,7 +285,7 @@ def retrain_model_for_coin(coin):
     y_down = y_down.loc[X_down.index]
 
     if len(X_up) < 10 or len(X_down) < 10:
-        print(f"❌ [{coin}] 데이터 부족: 재학습이 유의미하지 않습니다.")
+        print(f"❌ [{coin}] 재학습 불가: 데이터가 너무 적습니다.")
         return
 
     new_scaler_up = StandardScaler()
@@ -266,13 +298,11 @@ def retrain_model_for_coin(coin):
     new_xgb_down = XGBClassifier(n_estimators=500, learning_rate=0.05, max_depth=5, random_state=42)
     new_xgb_down.fit(X_down_scaled, y_down)
 
-    # Overwrite model files
     joblib.dump(new_xgb_up, f"xgb_up_{coin}.pkl")
     joblib.dump(new_scaler_up, f"scaler_up_{coin}.pkl")
     joblib.dump(new_xgb_down, f"xgb_down_{coin}.pkl")
     joblib.dump(new_scaler_down, f"scaler_down_{coin}.pkl")
 
-    # Update in-memory models
     models_dict[coin]["xgb_up"] = new_xgb_up
     models_dict[coin]["scaler_up"] = new_scaler_up
     models_dict[coin]["xgb_down"] = new_xgb_down
@@ -280,7 +310,7 @@ def retrain_model_for_coin(coin):
     print(f"✅ [{coin}] 재학습 완료 및 모델 업데이트")
 
 ############################################
-# Run prediction loop for each coin (Multi-threading)
+# 9) 예측 루프 실행 함수 (멀티스레딩)
 ############################################
 
 def run_forever_for_coin(coin):
@@ -289,7 +319,6 @@ def run_forever_for_coin(coin):
         try:
             print(f"\n⏳ [{coin}] {i}번째 예측 실행 중...")
             predict_and_evaluate_for_coin(coin)
-            # Retrain every 288 predictions (approximately 24 hours)
             if i % 288 == 0:
                 print(f"\n🚀 [{coin}] 288회 예측 완료 - 재학습 진행!")
                 retrain_model_for_coin(coin)
@@ -299,7 +328,7 @@ def run_forever_for_coin(coin):
             time.sleep(10)
 
 ############################################
-# Flask API Section
+# 10) Flask API
 ############################################
 
 app = Flask(__name__)
@@ -307,7 +336,6 @@ CORS(app)
 
 @app.route("/api/prediction_result")
 def prediction_result():
-    # Get coin symbol from market parameter (e.g., "KRW-BTC" -> "BTC")
     market = request.args.get("market", "KRW-BTC")
     coin = market.split("-")[-1]
     if coin not in latest_prediction or latest_prediction[coin] is None:
@@ -329,39 +357,27 @@ def coin_trend():
 def bitcoin_data():
     type_param = request.args.get("type", "5min")
     market = request.args.get("market", "KRW-BTC")
-    # 선택적 'to' 파라미터 (예: '2024-10-01 00:00:00')
-    to_param = request.args.get("to", None)
-    
-    # type_param에 따라 적절한 API 엔드포인트 설정
     if type_param == "5min":
-        # 예제에서는 1분봉을 요청 (원하는 경우 minutes/5로 변경 가능)
         url = "https://api.upbit.com/v1/candles/minutes/5"
     elif type_param == "daily":
         url = "https://api.upbit.com/v1/candles/days"
     else:
         return jsonify({"error": "Invalid type parameter. Use '5min' or 'daily'."}), 400
 
-    # count 파라미터 처리
     count = request.args.get("count", 200)
     try:
         count = int(count)
     except ValueError:
         count = 200
 
-    # API 요청 파라미터 구성
     params = {"market": market, "count": count}
-    if to_param:
-        params["to"] = to_param
-
-    headers = {"accept": "application/json"}
-    response = requests.get(url, params=params, headers=headers)
+    response = requests.get(url, params=params)
     if response.status_code != 200:
         return jsonify({"error": "Failed to retrieve data from Upbit API"}), 500
 
     data = response.json()
     data.reverse()
 
-    # trade_price 리스트를 통해 RSI, MACD, Signal 계산
     prices = [item["trade_price"] for item in data]
     rsi_values = compute_rsi(prices, period=14)
     macd_values, signal_values = compute_macd(prices, short_period=12, long_period=26, signal_period=9)
@@ -382,15 +398,12 @@ def bitcoin_data():
 
     return jsonify(transformed_data)
 
-
 ############################################
-# Main Execution: Start prediction threads for each coin and run Flask server
+# 11) 메인 실행
 ############################################
 
 if __name__ == "__main__":
-    # Start a thread for each coin's prediction loop
     for coin in coins_list:
         thread = threading.Thread(target=run_forever_for_coin, args=(coin,), daemon=True)
         thread.start()
-    # Run Flask API server
     app.run(debug=True, use_reloader=False)

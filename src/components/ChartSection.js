@@ -43,6 +43,7 @@ function ChartSection() {
       const response = await fetch(`http://localhost:5000/api/bitcoin_data?type=${dataType}&market=${market}`);
       const data = await response.json();
 
+
       // 캔들차트 데이터: [date, open, close, low, high]
       setChartData(data.map(item => [item.date, item.open, item.close, item.low, item.high]));
       // RSI 데이터: [date, rsi]
@@ -90,7 +91,12 @@ function ChartSection() {
         </Typography>
         <ReactECharts
           option={{
-            title: { text: "📊 상승/하락 확률", left: "center" },
+            title: {
+              text: "📊 상승/하락 확률",
+              left: "center",
+              subtext: `예측 시간: ${trendData.prediction_time}`, // 예측 시간 추가
+              subtextStyle: { fontSize: 12, color: "#666" } // 스타일 지정
+            },
             tooltip: { trigger: "item", formatter: "{b} : {c}%" },
             series: [
               {
@@ -101,13 +107,18 @@ function ChartSection() {
                   { value: trendData.down_prob, name: "📉 하락 가능성" }
                 ],
                 emphasis: {
-                  itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: "rgba(0, 0, 0, 0.5)" }
+                  itemStyle: {
+                    shadowBlur: 10,
+                    shadowOffsetX: 0,
+                    shadowColor: "rgba(0, 0, 0, 0.5)"
+                  }
                 }
               }
             ]
           }}
           style={{ height: "350px", width: "100%" }}
         />
+
 
         <Divider sx={{ margin: "20px 0" }} />
 
@@ -160,16 +171,17 @@ function ChartSection() {
                       const item = params[0];
                       return [
                         "날짜: " + item.axisValue,
-                        "시가: " + item.data[1],
-                        "종가: " + item.data[2],
-                        "최저가: " + item.data[3],
-                        "최고가: " + item.data[4]
+                        "시가: " + item.data[1].toLocaleString(),
+                        "종가: " + item.data[2].toLocaleString(),
+                        "최저가: " + item.data[3].toLocaleString(),
+                        "최고가: " + item.data[4].toLocaleString()
                       ].join("<br/>");
                     }
                   },
                   xAxis: {
                     type: "category",
-                    data: chartData.map(item => item[0]),
+                    // item[0]에서 시간만 추출하여 표시
+                    data: chartData.map(item => new Date(item[0]).toLocaleTimeString()), // 05:20:20 형태로 표시
                     scale: true,
                     boundaryGap: false,
                     axisLine: { onZero: false },
@@ -205,7 +217,7 @@ function ChartSection() {
                 option={{
                   title: { text: "📊 RSI 지표", left: "center" },
                   tooltip: { trigger: "axis" },
-                  xAxis: { type: "category", data: rsiData.map(item => item[0]) },
+                  xAxis: { type: "category", data: rsiData.map(item => new Date(item[0]).toLocaleTimeString()) },
                   yAxis: { type: "value", name: "RSI 값", min: 0, max: 100 },
                   series: [{ data: rsiData.map(item => item[1]), type: "line", smooth: true }]
                 }}
@@ -218,7 +230,7 @@ function ChartSection() {
                 option={{
                   title: { text: "📉 MACD & Signal", left: "center" },
                   tooltip: { trigger: "axis" },
-                  xAxis: { type: "category", data: macdData.map(item => item[0]) },
+                  xAxis: { type: "category", data: macdData.map(item => new Date(item[0]).toLocaleTimeString()) },
                   yAxis: { type: "value", name: "값" },
                   series: [
                     { name: "MACD", data: macdData.map(item => item[1]), type: "line", smooth: true },
