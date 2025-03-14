@@ -1,0 +1,30 @@
+.slot-machine-container {
+  text-align: center;
+  margin: 2rem auto;
+  max-width: 400px;
+}
+
+.slot-reels {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 1rem 0;
+}
+
+.result-msg {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin: 10px 0;
+}
+
+.button-group {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+button {
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  font-size: 16px;
+}
