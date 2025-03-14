@@ -192,7 +192,11 @@ function ChartSection() {
                   xAxis: {
                     type: "category",
                     // item[0]에서 시간만 추출하여 표시
-                    data: chartData.map(item => new Date(item[0]).toLocaleTimeString()), // 05:20:20 형태로 표시
+                    data: chartData.map(item => 
+                      dataType === "5min" 
+                        ? new Date(item[0]).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) // HH:mm 형식
+                        : new Date(item[0]).toISOString().split("T")[0] // YYYY-MM-DD 형식
+                    ), // 05:20:20 형태로 표시
                     scale: true,
                     boundaryGap: false,
                     axisLine: { onZero: false },
@@ -229,7 +233,11 @@ function ChartSection() {
                 option={{
                   title: { text: "📊 RSI 지표", left: "center" },
                   tooltip: { trigger: "axis" },
-                  xAxis: { type: "category", data: rsiData.map(item => new Date(item[0]).toLocaleTimeString()) },
+                  xAxis: { type: "category", data: chartData.map(item => 
+                    dataType === "5min" 
+                      ? new Date(item[0]).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) // HH:mm 형식
+                      : new Date(item[0]).toISOString().split("T")[0] // YYYY-MM-DD 형식
+                  )},
                   yAxis: { type: "value", name: "RSI 값", min: 0, max: 100 },
                   series: [{ data: rsiData.map(item => item[1]), type: "line", smooth: true }]
                 }}
@@ -242,7 +250,11 @@ function ChartSection() {
                 option={{
                   title: { text: "📉 MACD & Signal", left: "center" },
                   tooltip: { trigger: "axis" },
-                  xAxis: { type: "category", data: macdData.map(item => new Date(item[0]).toLocaleTimeString()) },
+                  xAxis: { type: "category", data: chartData.map(item => 
+                    dataType === "5min" 
+                      ? new Date(item[0]).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) // HH:mm 형식
+                      : new Date(item[0]).toISOString().split("T")[0] // YYYY-MM-DD 형식
+                  ) },
                   yAxis: { type: "value", name: "값" },
                   series: [
                     { name: "MACD", data: macdData.map(item => item[1]), type: "line", smooth: true },

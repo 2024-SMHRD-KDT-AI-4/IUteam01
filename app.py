@@ -15,15 +15,31 @@ from flask_cors import CORS
 # 1) DB 연결 설정
 ############################################
 
-connection = pymysql.connect(
-    host='project-db-cgi.smhrd.com',
-    port=3307,
-    user='cgi_24K_AI4_p2_2',
-    password='smhrd2',
-    db='cgi_24K_AI4_p2_2',
-    charset='utf8mb4',
-    cursorclass=pymysql.cursors.DictCursor
-)
+def get_db_connection():
+    return pymysql.connect(
+        host='project-db-cgi.smhrd.com',
+        port=3307,
+        user='cgi_24K_AI4_p2_2',
+        password='smhrd2',
+        db='cgi_24K_AI4_p2_2',
+        charset='utf8mb4',
+        cursorclass=pymysql.cursors.DictCursor
+    )
+
+def get_training_data_from_db(coin):
+    conn = get_db_connection()  # 새 연결 생성
+    table_name = f"prediction_results_{coin}"
+    sql = f"SELECT * FROM {table_name}"
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+    finally:
+        conn.close()  # 연결 닫기
+    df = pd.DataFrame(rows)
+    return df
+
+
 
 ############################################
 # 2) 유틸 함수: EMA, RSI, MACD
@@ -113,7 +129,6 @@ def get_upbit_data(market, count=100):
     return df
 
 def calculate_indicators(df):
-    # 실제 계산 로직 구현
     df['Price_Change_1'] = df['trade_price'].pct_change(1)
     df['Price_Change_3'] = df['trade_price'].pct_change(3)
     df['3EMA'] = df['trade_price'].ewm(span=3, adjust=False).mean()
@@ -147,42 +162,52 @@ def calculate_indicators(df):
 ############################################
 
 def insert_prediction_result(coin, row_data):
+    conn = get_db_connection()  # 새 연결 생성
     table_name = f"prediction_results_{coin}"
     columns = ", ".join(row_data.keys())
     placeholders = ", ".join(["%s"] * len(row_data))
     sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
-    with connection.cursor() as cursor:
-        cursor.execute(sql, tuple(row_data.values()))
-    connection.commit()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(sql, tuple(row_data.values()))
+        conn.commit()
+    finally:
+        conn.close()
 
 def get_training_data_from_db(coin):
+    conn = get_db_connection()  # 새 연결 생성
     table_name = f"prediction_results_{coin}"
     sql = f"SELECT * FROM {table_name}"
-    with connection.cursor() as cursor:
-        cursor.execute(sql)
-        rows = cursor.fetchall()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+    finally:
+        conn.close()  # 연결 닫기
+    # rows가 리스트가 아닐 경우 리스트로 감싸기
+    if not isinstance(rows, list):
+        rows = [rows]
     df = pd.DataFrame(rows)
     return df
 
+
 ############################################
-# 7) 예측 함수
+# 7) 즉시 예측 함수 (평가 없이 최신 데이터로 예측 및 DB 저장)
 ############################################
 
-def predict_and_evaluate_for_coin(coin):
+def predict_immediate_for_coin(coin):
     global latest_prediction
     market = f"KRW-{coin}"
     df_new = get_upbit_data(market)
     df_new = calculate_indicators(df_new)
-    print(f"[{coin}] df_new columns:", df_new.columns.tolist())
+    print(f"[{coin}] (즉시) df_new columns:", df_new.columns.tolist())
     df_new = df_new.dropna()
     if df_new.empty:
-        print(f" [{coin}] 데이터 부족/API 오류")
-        return
+        raise Exception(f"[{coin}] 데이터 부족/API 오류")
 
     models = models_dict.get(coin)
     if models is None:
-        print(f" [{coin}] 모델을 찾을 수 없습니다.")
-        return
+        raise Exception(f"[{coin}] 모델을 찾을 수 없습니다.")
 
     X_new_up = df_new[selected_features_up].iloc[-1:]
     X_new_down = df_new[selected_features_down].iloc[-1:]
@@ -199,7 +224,7 @@ def predict_and_evaluate_for_coin(coin):
     current_price = df_new['trade_price'].iloc[-1]
     prediction_time = df_new['candle_date_time_kst'].iloc[-1]
 
-    print(f"\n [{coin}] 예측 결과")
+    print(f"\n [{coin}] (즉시) 예측 결과")
     print(f" 예측 시간: {prediction_time}")
     print(f" 현재 가격: {current_price}")
     print(f" 최종 예측: {predicted_direction} (상승 {xgb_up_prob}%, 하락 {xgb_down_prob}%)")
@@ -210,47 +235,23 @@ def predict_and_evaluate_for_coin(coin):
         "predicted_dir": predicted_direction,
         "xgb_up_prob": xgb_up_prob,
         "xgb_down_prob": xgb_down_prob,
-        "future_time": None,
-        "future_price": None,
-        "actual_dir": None,
-        "result": None
+        "future_time": prediction_time,  # 또는 "" 혹은 "N/A"
+        "future_price": 0,
+        "actual_dir": 0,
+        "result": 0
     }
-
-    print(f"\n⌛ [{coin}] 5분 후 실제 가격 확인 대기...")
-    time.sleep(300)
-    df_future = get_upbit_data(market)
-    future_price = df_future['trade_price'].iloc[-1]
-    future_time = df_future['candle_date_time_kst'].iloc[-1]
-    actual_direction = "상승 " if future_price > current_price else ("하락 " if future_price < current_price else "변동없음")
-    result = " 정답" if predicted_direction == actual_direction else " 오답"
-
-    print(f"\n [{coin}] 예측 검증 결과")
-    print(f" 실제 확인 시간: {future_time}")
-    print(f" 5분 후 실제 가격: {future_price}")
-    print(f" 예측 결과: {predicted_direction} → {result}")
-
-    latest_prediction[coin].update({
-        "future_time": future_time,
-        "future_price": future_price,
-        "actual_dir": actual_direction,
-        "result": result
-    })
-
-    row_data = {}
-    row_data["prediction_time"] = prediction_time
-    row_data["current_price"] = current_price
-    row_data["future_time"] = future_time
-    row_data["future_price"] = future_price
-    row_data["predicted_dir"] = predicted_direction
-    row_data["actual_dir"] = actual_direction
-    row_data["xgb_up_prob"] = xgb_up_prob
-    row_data["xgb_down_prob"] = xgb_down_prob
-    row_data["result"] = result
-    for feat in ALL_FEATURES:
-        row_data[feat] = df_new[feat].iloc[-1]
     
-    insert_prediction_result(coin, row_data)
-    print(f" [{coin}] 최종 DB 저장 완료!")
+    # 만약 DB 저장도 원하신다면, 여기에 DB 저장 함수를 호출하세요.
+    try:
+        insert_prediction_result(coin, latest_prediction[coin])
+        print(f"[{coin}] 예측 결과 DB 저장 완료!")
+    except Exception as db_e:
+        print(f"[{coin}] DB 저장 실패: {db_e}")
+        
+    return latest_prediction[coin]
+
+
+
 
 ############################################
 # 8) 재학습 함수
@@ -314,11 +315,12 @@ def run_forever_for_coin(coin):
     while True:
         try:
             print(f"\n [{coin}] {i}번째 예측 실행 중...")
-            predict_and_evaluate_for_coin(coin)
+            predict_immediate_for_coin(coin)  # 즉시 예측 함수 호출
             if i % 288 == 0:
                 print(f"\n [{coin}] 288회 예측 완료 - 재학습 진행!")
                 retrain_model_for_coin(coin)
             i += 1
+            time.sleep(60)  # 1분 간격으로 예측 실행 (원하는 주기로 조정)
         except Exception as e:
             print(f" [{coin}] 에러 발생: {e}")
             time.sleep(10)
@@ -393,6 +395,16 @@ def bitcoin_data():
         })
 
     return jsonify(transformed_data)
+
+@app.route("/api/update_prediction")
+def update_prediction():
+    market = request.args.get("market", "KRW-BTC")
+    coin = market.split("-")[-1]
+    try:
+        result = predict_immediate_for_coin(coin)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 ############################################
 # 11) 메인 실행
