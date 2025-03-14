@@ -66,7 +66,7 @@ def compute_macd(prices, short_period=12, long_period=26, signal_period=9):
 ############################################
 
 coins_list = ["BTC", "ETH", "BCH", "SOL", "NEO", "TRUMP", "STRIKE", "ENS", "ETC", "XRP"]
-latest_prediction = {}
+latest_prediction = {}    # 예: latest_prediction["BTC"] = {...}
 models_dict = {}
 
 selected_features_up = [
@@ -113,7 +113,7 @@ def get_upbit_data(market, count=100):
     return df
 
 def calculate_indicators(df):
-    # 실제 계산 로직을 구현 (예시):
+    # 실제 계산 로직 구현
     df['Price_Change_1'] = df['trade_price'].pct_change(1)
     df['Price_Change_3'] = df['trade_price'].pct_change(3)
     df['3EMA'] = df['trade_price'].ewm(span=3, adjust=False).mean()
@@ -151,7 +151,6 @@ def insert_prediction_result(coin, row_data):
     columns = ", ".join(row_data.keys())
     placeholders = ", ".join(["%s"] * len(row_data))
     sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
-    
     with connection.cursor() as cursor:
         cursor.execute(sql, tuple(row_data.values()))
     connection.commit()
@@ -174,19 +173,17 @@ def predict_and_evaluate_for_coin(coin):
     market = f"KRW-{coin}"
     df_new = get_upbit_data(market)
     df_new = calculate_indicators(df_new)
-    # 디버깅: 컬럼 확인
     print(f"[{coin}] df_new columns:", df_new.columns.tolist())
     df_new = df_new.dropna()
     if df_new.empty:
-        print(f"❌ [{coin}] 데이터 부족/API 오류")
+        print(f" [{coin}] 데이터 부족/API 오류")
         return
 
     models = models_dict.get(coin)
     if models is None:
-        print(f"❌ [{coin}] 모델을 찾을 수 없습니다.")
+        print(f" [{coin}] 모델을 찾을 수 없습니다.")
         return
 
-    # Feature 추출 및 스케일링
     X_new_up = df_new[selected_features_up].iloc[-1:]
     X_new_down = df_new[selected_features_down].iloc[-1:]
     X_new_up_scaled = models["scaler_up"].transform(X_new_up)
@@ -198,14 +195,14 @@ def predict_and_evaluate_for_coin(coin):
     xgb_up_prob = round((xgb_up_prob / prob_sum) * 100)
     xgb_down_prob = 100 - xgb_up_prob
 
-    predicted_direction = "상승 📈" if xgb_up_prob > xgb_down_prob else "하락 📉"
+    predicted_direction = "상승 " if xgb_up_prob > xgb_down_prob else "하락 "
     current_price = df_new['trade_price'].iloc[-1]
     prediction_time = df_new['candle_date_time_kst'].iloc[-1]
 
-    print(f"\n✅ [{coin}] 예측 결과")
-    print(f"📅 예측 시간: {prediction_time}")
-    print(f"💰 현재 가격: {current_price}")
-    print(f"📢 최종 예측: {predicted_direction} (상승 {xgb_up_prob}%, 하락 {xgb_down_prob}%)")
+    print(f"\n [{coin}] 예측 결과")
+    print(f" 예측 시간: {prediction_time}")
+    print(f" 현재 가격: {current_price}")
+    print(f" 최종 예측: {predicted_direction} (상승 {xgb_up_prob}%, 하락 {xgb_down_prob}%)")
 
     latest_prediction[coin] = {
         "prediction_time": prediction_time,
@@ -224,13 +221,13 @@ def predict_and_evaluate_for_coin(coin):
     df_future = get_upbit_data(market)
     future_price = df_future['trade_price'].iloc[-1]
     future_time = df_future['candle_date_time_kst'].iloc[-1]
-    actual_direction = "상승 📈" if future_price > current_price else ("하락 📉" if future_price < current_price else "변동없음")
-    result = "⭕ 정답" if predicted_direction == actual_direction else "❌ 오답"
+    actual_direction = "상승 " if future_price > current_price else ("하락 " if future_price < current_price else "변동없음")
+    result = " 정답" if predicted_direction == actual_direction else " 오답"
 
-    print(f"\n✅ [{coin}] 예측 검증 결과")
-    print(f"📅 실제 확인 시간: {future_time}")
-    print(f"💰 5분 후 실제 가격: {future_price}")
-    print(f"📢 예측 결과: {predicted_direction} → {result}")
+    print(f"\n [{coin}] 예측 검증 결과")
+    print(f" 실제 확인 시간: {future_time}")
+    print(f" 5분 후 실제 가격: {future_price}")
+    print(f" 예측 결과: {predicted_direction} → {result}")
 
     latest_prediction[coin].update({
         "future_time": future_time,
@@ -239,7 +236,6 @@ def predict_and_evaluate_for_coin(coin):
         "result": result
     })
 
-    # DB 저장을 위한 row_data 구성
     row_data = {}
     row_data["prediction_time"] = prediction_time
     row_data["current_price"] = current_price
@@ -254,7 +250,7 @@ def predict_and_evaluate_for_coin(coin):
         row_data[feat] = df_new[feat].iloc[-1]
     
     insert_prediction_result(coin, row_data)
-    print(f"✅ [{coin}] 최종 DB 저장 완료!")
+    print(f" [{coin}] 최종 DB 저장 완료!")
 
 ############################################
 # 8) 재학습 함수
@@ -263,12 +259,12 @@ def predict_and_evaluate_for_coin(coin):
 def retrain_model_for_coin(coin):
     models = models_dict.get(coin)
     if models is None:
-        print(f"❌ [{coin}] 모델이 없습니다.")
+        print(f" [{coin}] 모델이 없습니다.")
         return
 
     df = get_training_data_from_db(coin)
     if df.empty:
-        print(f"❌ [{coin}] 재학습 불가: DB에 데이터가 없습니다.")
+        print(f" [{coin}] 재학습 불가: DB에 데이터가 없습니다.")
         return
 
     df['label_up'] = (df['future_price'] > df['current_price']).astype(int)
@@ -285,7 +281,7 @@ def retrain_model_for_coin(coin):
     y_down = y_down.loc[X_down.index]
 
     if len(X_up) < 10 or len(X_down) < 10:
-        print(f"❌ [{coin}] 재학습 불가: 데이터가 너무 적습니다.")
+        print(f" [{coin}] 재학습 불가: 데이터가 너무 적습니다.")
         return
 
     new_scaler_up = StandardScaler()
@@ -317,14 +313,14 @@ def run_forever_for_coin(coin):
     i = 1
     while True:
         try:
-            print(f"\n⏳ [{coin}] {i}번째 예측 실행 중...")
+            print(f"\n [{coin}] {i}번째 예측 실행 중...")
             predict_and_evaluate_for_coin(coin)
             if i % 288 == 0:
-                print(f"\n🚀 [{coin}] 288회 예측 완료 - 재학습 진행!")
+                print(f"\n [{coin}] 288회 예측 완료 - 재학습 진행!")
                 retrain_model_for_coin(coin)
             i += 1
         except Exception as e:
-            print(f"❌ [{coin}] 에러 발생: {e}")
+            print(f" [{coin}] 에러 발생: {e}")
             time.sleep(10)
 
 ############################################

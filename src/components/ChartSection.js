@@ -13,6 +13,10 @@ import {
   Divider
 } from "@mui/material";
 import ReactECharts from "echarts-for-react";
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
 
 function ChartSection() {
   const [dataType, setDataType] = useState("5min");
@@ -22,6 +26,10 @@ function ChartSection() {
   const [trendData, setTrendData] = useState({ up_prob: 50, down_prob: 50 });
   const [loading, setLoading] = useState(false);
   const [coinSymbol, setCoinSymbol] = useState("BTC");
+  const [openDialog, setOpenDialog] = useState(false); // 모달 상태 추가
+
+  const handleOpenDialog = () => setOpenDialog(true);
+  const handleCloseDialog = () => setOpenDialog(false);
 
   const coins = [
     { symbol: "BTC", name: "비트코인" },
@@ -94,7 +102,6 @@ function ChartSection() {
             title: {
               text: "📊 상승/하락 확률",
               left: "center",
-              subtext: `예측 시간: ${trendData.prediction_time}`, // 예측 시간 추가
               subtextStyle: { fontSize: 12, color: "#666" } // 스타일 지정
             },
             tooltip: { trigger: "item", formatter: "{b} : {c}%" },
@@ -128,7 +135,7 @@ function ChartSection() {
         </Typography>
 
         <FormControl fullWidth sx={{ marginBottom: "1rem" }}>
-          <InputLabel id="coin-select-label">코인 선택</InputLabel>
+          <InputLabel id="coin-select-label" sx={{ transform: "translateY(-20px)" }}>코인 선택</InputLabel>
           <Select
             labelId="coin-select-label"
             id="coin-select"
@@ -152,10 +159,14 @@ function ChartSection() {
               1일단위
             </Button>
           </ButtonGroup>
+          <Button variant="contained" onClick={handleOpenDialog}>
+            ℹ️ 차트 설명
+          </Button>
           <Button variant="contained" onClick={updateAll}>
             🔄 업데이트
           </Button>
         </Box>
+
 
         {loading ? (
           <Typography align="center">📊 데이터 로딩 중...</Typography>
@@ -211,6 +222,7 @@ function ChartSection() {
                 style={{ height: "300px", width: "100%" }}
               />
             )}
+
             <Divider sx={{ margin: "10px 0" }} />
             {rsiData.length > 0 && (
               <ReactECharts
@@ -242,9 +254,55 @@ function ChartSection() {
             )}
           </>
         )}
+        <Dialog
+          open={openDialog}
+          onClose={() => setOpenDialog(false)}
+          maxWidth="md" // 최대 너비를 중간 크기로 설정
+          fullWidth // 전체 너비를 사용하여 화면을 꽉 채우도록
+        >
+          <DialogTitle>차트 설명</DialogTitle>
+          <DialogContent sx={{ padding: 4 }}>  {/* 내용에 여백을 추가하여 더 여유롭게 보이도록 */}
+            <Typography variant="body1" sx={{ marginBottom: 2 }}>
+              📢 코인 분석 지표 안내
+              안녕하세요! 📊 이 페이지에서는 MACD & Signal 지표, 캔들차트 기반 RSI 지표, 그리고 우리가 개발한 머신러닝 모델을 활용하여 코인의 상승 및 하락 확률을 분석해 드립니다.
+            </Typography>
+            <Typography variant="body1" sx={{ marginBottom: 2 }}>
+              🔹 1. MACD & Signal 지표란?
+              MACD(이동 평균 수렴·발산)는 단기 이동평균선과 장기 이동평균선의 차이를 활용하여 시장의 흐름을 분석하는 지표입니다.
+              MACD가 Signal 선을 상향 돌파하면 상승 신호 📈
+              MACD가 Signal 선을 하향 돌파하면 하락 신호 📉
+            </Typography>
+            <Typography variant="body1" sx={{ marginBottom: 2 }}>
+              🔹 2. RSI(Relative Strength Index) 지표란?
+              RSI(상대 강도 지수)는 최근 가격 변동을 기준으로 과매수·과매도 상태를 분석하는 지표입니다.
+              RSI 70 이상 → 과매수 상태, 하락 가능성 증가 ⚠️
+              RSI 30 이하 → 과매도 상태, 상승 가능성 증가 ✅
+            </Typography>
+            <Typography variant="body1" sx={{ marginBottom: 2 }}>
+              🔹 3. 머신러닝 모델 예측
+              우리는 다양한 코인 시장 데이터를 학습하여 코인의 상승 및 하락 확률을 예측하는 머신러닝 모델을 개발하였습니다.
+              과거 패턴을 분석하여 현재 시장의 상승·하락 확률을 수치로 제공합니다.
+              다양한 지표와 함께 확인하면 보다 정확한 투자 판단을 내리는 데 도움이 됩니다!
+              💡 이 지표들은 투자 판단의 참고 자료일 뿐이며, 최종적인 투자 결정은 신중하게 진행해 주세요!
+              🚀 이제 원하는 코인을 선택하고 분석을 시작해 보세요! 🔍
+            </Typography>
+            <Typography variant="body1" sx={{ marginBottom: 2 }}>
+              🔹 머신러닝 모델의 예측은 정각을 기준으로 5분마다 실행되며 이후 5분간의 그래프 변동에 대해 예측을 진행합니다!
+              
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenDialog(false)} color="primary">
+              닫기
+            </Button>
+          </DialogActions>
+        </Dialog>
       </CardContent>
+
     </Card>
+
   );
 }
 
 export default ChartSection;
+

@@ -1,11 +1,19 @@
 import React, { useState } from "react";
+import { Tabs, Tab, Box } from "@mui/material";
 import { useTranslation } from "react-i18next";
-import "./FortuneSection.css"; // 스타일 파일 추가
+import "./FunnySection.css";
+import RPSGame from "./RPSGame";
+import SlotMachine from "./SlotMachine";
+import Hangman from "./Hangman";
+import MemoryGame from "./MemoryGame";
+import ClickGame from "./ClickGame";
+import CoinQuiz from "./CoinQuiz"
 
-function FortuneSection() {
+// 운세 카드 영역: 3x3 그리드로 운세를 보여줌
+function FortuneCards() {
   const { t, i18n } = useTranslation();
 
-  // 주식 관련 운세 (12개)
+  // 투자 운세 (12개)
   const fortunesKR = [
     "📈 오늘은 상승장이 예상됩니다! 기회를 잡아보세요!",
     "📉 조정이 올 수 있습니다. 냉정함을 유지하세요.",
@@ -36,23 +44,24 @@ function FortuneSection() {
     "🎯 Think long-term for sustainable investment success."
   ];
 
-  const fortunes = i18n.language === "ko" ? [...fortunesKR] : [...fortunesEN];
+  const fortunes = i18n.language === "ko" ? fortunesKR : fortunesEN;
 
+  // 상태: 선택한 카드, 각 카드에 할당된 운세, 남은 운세
   const [selectedCards, setSelectedCards] = useState(Array(9).fill(null));
   const [cardFortunes, setCardFortunes] = useState(Array(9).fill(""));
   const [availableFortunes, setAvailableFortunes] = useState([...fortunes]);
 
   const handleCardClick = (index) => {
-    if (selectedCards[index] !== null || availableFortunes.length === 0) return; // 이미 선택된 카드 방지
+    // 이미 선택된 카드거나 남은 운세가 없으면 리턴
+    if (selectedCards[index] !== null || availableFortunes.length === 0) return;
 
-    // 랜덤하게 운세를 하나 선택 (중복 방지)
+    // 남은 운세 중 랜덤하게 하나 선택
     const randomIndex = Math.floor(Math.random() * availableFortunes.length);
     const chosenFortune = availableFortunes[randomIndex];
 
     // 사용한 운세 제거
     const newAvailableFortunes = availableFortunes.filter((_, i) => i !== randomIndex);
 
-    // 상태 업데이트
     const updatedSelected = [...selectedCards];
     const updatedCardFortunes = [...cardFortunes];
 
@@ -62,7 +71,7 @@ function FortuneSection() {
     setSelectedCards(updatedSelected);
     setAvailableFortunes(newAvailableFortunes);
 
-    // 애니메이션 고려하여 운세 설정 딜레이
+    // 딜레이 후 운세 업데이트 (애니메이션 효과 고려)
     setTimeout(() => setCardFortunes(updatedCardFortunes), 500);
   };
 
@@ -98,4 +107,42 @@ function FortuneSection() {
   );
 }
 
-export default FortuneSection;
+function FunnySection() {
+  // 하위 탭 상태: 0: 운세 카드, 1: 가위바위보, 2: 슬롯머신
+  const [subTab, setSubTab] = useState(0);
+
+  const handleSubTabChange = (event, newValue) => {
+    setSubTab(newValue);
+  };
+
+  return (
+    <Box>
+      {/* 하위 탭 메뉴 */}
+      <Tabs
+        value={subTab}
+        onChange={handleSubTabChange}
+        variant="fullWidth"
+        centered
+      >
+        <Tab label="운세 카드(fortunecard)" />
+        <Tab label="가위바위보(rock-paper-scissors)" />
+        <Tab label="슬롯머신(slotmachine)" />
+        <Tab label="행맨(Hangman)" />
+        <Tab label="메모리게임(MemoryGame)" />
+        <Tab label="클릭게임(ClickGame)" />
+        <Tab label="코인퀴즈(CoinQuiz)" />
+      </Tabs>
+
+      {/* 탭별 콘텐츠 전환 */}
+      {subTab === 0 && <FortuneCards />}
+      {subTab === 1 && <RPSGame />}
+      {subTab === 2 && <SlotMachine />}
+      {subTab === 3 && <Hangman />}
+      {subTab === 4 && <MemoryGame />}
+      {subTab === 5 && <ClickGame />}
+      {subTab === 6 && <CoinQuiz />}
+    </Box>
+  );
+}
+
+export default FunnySection;

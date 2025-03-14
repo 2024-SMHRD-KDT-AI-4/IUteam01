@@ -1,0 +1,40 @@
+.click-game-container {
+    text-align: center;
+    margin: 2rem auto;
+    max-width: 400px;
+    font-family: Arial, sans-serif;
+  }
+  
+  .stats {
+    margin-bottom: 1rem;
+  }
+  
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 1rem;
+  }
+  
+  .grid-cell {
+    background-color: #eee;
+    padding-top: 100%; /* 정사각형 유지 */
+    position: relative;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    transition: background-color 0.3s;
+  }
+  
+  .grid-cell:hover {
+    background-color: #ddd;
+  }
+  
+  .grid-cell .mole {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+  }
+  

@@ -24,7 +24,7 @@ import i18n from "../i18n";
 import ChartSection from "./ChartSection";
 import NewsSection from "./NewsSection";
 import InquirySection from "./InquirySection";
-import FortuneSection from "./FortuneSection";
+import FunnySection from "./games/FunnySection";
 import { motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -239,7 +239,7 @@ function Dashboard({ darkMode, setDarkMode }) {
             variant={activeTab === "fortune" ? "contained" : "outlined"}
             onClick={() => handleTabChange("fortune")}
           >
-            🔮 {t("fortune")}
+            🔮 {t("funny")}
           </Button>
         </Box>
 
@@ -257,7 +257,7 @@ function Dashboard({ darkMode, setDarkMode }) {
           >
             {activeTab === "chart" && <ChartSection />}
             {activeTab === "news" && <NewsSection />}
-            {activeTab === "fortune" && <FortuneSection />}
+            {activeTab === "funny" && <FunnySection />}
             {activeTab === "inquiry" && <InquirySection />}
             {activeTab === "exchangeInfo" && <ExchangeInfoSection />}
           </Box>
