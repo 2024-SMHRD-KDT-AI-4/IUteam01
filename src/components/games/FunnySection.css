@@ -69,7 +69,7 @@
   background-color: #fff;
   color: #000;
   transform: rotateY(180deg);
-  font-size: 1.1rem;
+  font-size: 18px !important;
 }
 
 /* 반응형 처리 */

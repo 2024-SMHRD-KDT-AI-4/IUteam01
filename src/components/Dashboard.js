@@ -236,8 +236,8 @@ function Dashboard({ darkMode, setDarkMode }) {
             🏦 {t("exchangeInfo")}
           </Button>
           <Button
-            variant={activeTab === "fortune" ? "contained" : "outlined"}
-            onClick={() => handleTabChange("fortune")}
+            variant={activeTab === "funny" ? "contained" : "outlined"}
+            onClick={() => handleTabChange("funny")}
           >
             🔮 {t("funny")}
           </Button>
